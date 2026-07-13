@@ -181,9 +181,9 @@ export default function App() {
   // Snapshot cart state once when checkout begins to avoid stale closures
   const checkoutSnapshotRef = useRef<{ cart: typeof cart; subtotal: number; itemCount: number } | null>(null);
 
-  // After payment succeeds, actually create the order
-  const handlePaymentSuccess = useCallback(
-    async (_transactionId: string) => {
+  // Place the order directly (no payment gateway)
+  const handlePlaceOrder = useCallback(
+    async () => {
       const pending = pendingOrderRef.current;
       const snapshot = checkoutSnapshotRef.current;
       if (!pending || !snapshot) return;
@@ -326,7 +326,8 @@ export default function App() {
         <PaymentModal
           isOpen={showPaymentModal}
           amount={cartSubtotal}
-          onSuccess={handlePaymentSuccess}
+          loading={checkoutLoading}
+          onConfirm={handlePlaceOrder}
           onCancel={handlePaymentCancel}
         />
 
