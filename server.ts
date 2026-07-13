@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { clerkMiddleware, requireAuth } from '@clerk/express';
+import { createClerkClient } from '@clerk/backend';
 import pool from './src/db/pool';
 import fs from 'fs';
 import path from 'path';
@@ -156,13 +157,12 @@ app.post('/api/contact', async (req, res) => {
 
 // ─── Clerk Admin Helper ──────────────────────────────────────────
 
+const clerkClient = createClerkClient({ secretKey: clerkSecretKey });
+
 async function isAdminUser(clerkUserId: string): Promise<boolean> {
   try {
-    const { rows } = await pool.query(
-      'SELECT 1 FROM admin_users WHERE clerk_user_id = $1',
-      [clerkUserId]
-    );
-    return rows.length > 0;
+    const user = await clerkClient.users.getUser(clerkUserId);
+    return (user.publicMetadata as Record<string, unknown>)?.role === 'admin';
   } catch {
     return false;
   }

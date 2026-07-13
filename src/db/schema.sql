@@ -43,14 +43,9 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at        TIMESTAMP DEFAULT NOW()
 );
 
--- Admin users (Clerk user IDs with admin privileges)
--- After signing in on the site, run this SQL with YOUR Clerk user ID:
---   INSERT INTO admin_users (clerk_user_id) VALUES ('user_xxxxxx');
-CREATE TABLE IF NOT EXISTS admin_users (
-  id            SERIAL PRIMARY KEY,
-  clerk_user_id VARCHAR(255) UNIQUE NOT NULL,
-  created_at    TIMESTAMP DEFAULT NOW()
-);
+-- Admin users are managed via Clerk public_metadata.role === 'admin'
+-- Set it here: https://dashboard.clerk.com/last-active?path=users
+-- (No local admin_users table needed)
 
 -- ─── Migrations for existing tables (from previous deployments) ──
 
