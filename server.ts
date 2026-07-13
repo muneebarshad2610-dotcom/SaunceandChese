@@ -200,7 +200,7 @@ async function isAdminUser(clerkUserId: string): Promise<boolean> {
 
 async function isKitchenUser(clerkUserId: string): Promise<boolean> {
   const role = await getUserRole(clerkUserId);
-  return role === 'kitchen';
+  return role === 'kitchen' || role === 'admin' || role === 'manager';
 }
 
 async function requireAdminOrManager(req: any, res: any): Promise<string | null> {

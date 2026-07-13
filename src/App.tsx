@@ -97,20 +97,18 @@ export default function App() {
         const res = await fetch(API_BASE + '/api/admin/check', {
           headers: { Authorization: 'Bearer ' + token },
         });
-        if (res.ok) {
-          const data = await res.json();
-          setIsAdmin(data.admin);
-          // Kitchen check: users with 'kitchen' role are not admin, but can access kitchen
-          if (!data.admin) {
-            const kitchenRes = await fetch(API_BASE + '/api/kitchen/check', {
-              headers: { Authorization: 'Bearer ' + token },
-            });
-            if (kitchenRes.ok) {
-              const kitchenData = await kitchenRes.json();
-              setIsKitchen(kitchenData.kitchen);
-            }
-          }
-        }
+         if (res.ok) {
+           const data = await res.json();
+           setIsAdmin(data.admin);
+           // Kitchen check: users with 'kitchen', 'admin', or 'manager' role can access kitchen
+           const kitchenRes = await fetch(API_BASE + '/api/kitchen/check', {
+             headers: { Authorization: 'Bearer ' + token },
+           });
+           if (kitchenRes.ok) {
+             const kitchenData = await kitchenRes.json();
+             setIsKitchen(kitchenData.kitchen);
+           }
+         }
       } catch {
         // Non-critical, just hide features
       }
