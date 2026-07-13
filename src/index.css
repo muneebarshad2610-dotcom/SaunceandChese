@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Kalam:wght@400;700&family=Bebas+Neue&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-retro: "Bebas Neue", cursive;
+  --font-handwritten: "Kalam", cursive;
+}
+
+/* Custom retro styling utilities */
+.retro-shadow {
+  box-shadow: 8px 8px 0px 0px #C41E3A;
+}
+
+.retro-shadow-sm {
+  box-shadow: 4px 4px 0px 0px #FFB81C;
+}
+
+.retro-shadow-gold {
+  box-shadow: 6px 6px 0px 0px #FFB81C;
+}
+
+.retro-shadow-red {
+  box-shadow: 6px 6px 0px 0px #C41E3A;
+}
+
+.blob-mask {
+  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 30s linear infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(3deg);
+  }
+  50% {
+    transform: translateY(-15px) rotate(1deg);
+  }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
