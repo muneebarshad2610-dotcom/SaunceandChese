@@ -53,10 +53,20 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="text-center border-t border-white/10 pt-10 max-w-7xl mx-auto">
-        <p className="text-[#FDF5E6]/40 font-bold uppercase tracking-widest text-[11px]">
-          &copy; 2026 Sauce n' Cheese Restaurant Group. Stay Gooey, Karachi!
-        </p>
+      <div className="border-t border-white/10 pt-8 max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-[#FDF5E6]/40 font-bold uppercase tracking-widest text-[11px]">
+            &copy; 2026 Sauce n' Cheese Restaurant Group. Stay Gooey, Karachi!
+          </p>
+          <div className="flex items-center gap-6">
+            <a href="/terms" className="text-[#FDF5E6]/50 hover:text-[#FFB81C] transition-colors text-[10px] font-black uppercase tracking-widest">
+              Terms of Service
+            </a>
+            <a href="/privacy" className="text-[#FDF5E6]/50 hover:text-[#FFB81C] transition-colors text-[10px] font-black uppercase tracking-widest">
+              Privacy Policy
+            </a>
+          </div>
+        </div>
       </div>
     </footer>
   );

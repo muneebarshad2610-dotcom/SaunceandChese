@@ -16,13 +16,15 @@ import CheckoutForm from './components/modals/CheckoutForm';
 import OrderSuccessModal from './components/modals/OrderSuccessModal';
 import OrderHistory from './pages/OrderHistory';
 import AdminDashboard from './pages/AdminDashboard';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import { useCart } from './hooks/useCart';
 import { useMenuItems } from './hooks/useMenuItems';
 import type { MenuItem, OrderDetails, CheckoutFormData } from './types';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
-type Page = 'home' | 'menu' | 'orders' | 'admin';
+type Page = 'home' | 'menu' | 'orders' | 'admin' | 'terms' | 'privacy';
 
 export default function App() {
   const { isSignedIn, getToken } = useAuth();
@@ -47,6 +49,8 @@ export default function App() {
     if (path === '/menu') return 'menu';
     if (path === '/orders') return 'orders';
     if (path === '/admin') return 'admin';
+    if (path === '/terms') return 'terms';
+    if (path === '/privacy') return 'privacy';
     return 'home';
   };
 
@@ -323,6 +327,28 @@ export default function App() {
           </>
         )}
       </>
+    );
+  }
+
+  // ─── Page: Terms of Service ──────────────────────────────
+  if (currentPage === 'terms') {
+    return (
+      <ErrorBoundary>
+        <div className="min-h-screen bg-[#FDF5E6] font-sans flex flex-col">
+          <TermsOfService onNavigateHome={() => navigate('home')} />
+        </div>
+      </ErrorBoundary>
+    );
+  }
+
+  // ─── Page: Privacy Policy ────────────────────────────────
+  if (currentPage === 'privacy') {
+    return (
+      <ErrorBoundary>
+        <div className="min-h-screen bg-[#FDF5E6] font-sans flex flex-col">
+          <PrivacyPolicy onNavigateHome={() => navigate('home')} />
+        </div>
+      </ErrorBoundary>
     );
   }
 
