@@ -210,3 +210,9 @@
 - Verified hamburger menu responsive: `md:hidden` toggle, `hidden md:flex` desktop nav, right-slide drawer at `top-[72px]`, `w-72` fits small phone screens, backdrop overlay, scroll lock, aria-labels, auth buttons included, closes on navigation.
 - TypeScript clean across all files.
 - **Files touched**: docs/session.md
+
+## Session 23 — [2026-07-14] — Fix mobile drawer z-index overlay
+
+- **Problem**: Mobile drawer had `z-20` while sticky navbar had `z-40`, causing the drawer to render behind the navbar.
+- **Fix**: Drawer now uses `fixed inset-0` (full screen) with `z-50`, backdrop uses `z-40`. Drawer properly overlays everything including the sticky navbar.
+- **Files touched**: src/components/layout/Navbar.tsx, docs/session.md

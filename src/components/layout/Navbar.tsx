@@ -32,6 +32,7 @@ export default function Navbar({ cartItemCount, onCartOpen, currentPage, onNavig
   const closeMobile = () => setMobileOpen(false);
 
   return (
+    <>
     <nav
       id="site-nav"
       className="sticky top-0 z-40 bg-[#FDF5E6]/95 backdrop-blur-md border-b-4 border-[#C41E3A] py-3 px-4 sm:px-6 md:px-12 flex justify-between items-center shadow-sm"
@@ -192,7 +193,8 @@ export default function Navbar({ cartItemCount, onCartOpen, currentPage, onNavig
         </button>
       </div>
 
-      {/* Mobile drawer */}
+      {/* Mobile drawer — rendered outside <nav> to avoid stacking-context issues */}
+      </nav>
       <AnimatePresence>
         {mobileOpen && (
           <>
@@ -263,6 +265,6 @@ export default function Navbar({ cartItemCount, onCartOpen, currentPage, onNavig
           </>
         )}
       </AnimatePresence>
-    </nav>
+    </>
   );
 }
