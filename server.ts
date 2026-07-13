@@ -50,6 +50,14 @@ async function migrate() {
   }
 }
 
+// ─── Serve built frontend (production) ──────────────────────────
+
+const distPath = path.resolve('dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  console.log(`✅ Serving static frontend from ${distPath}`);
+}
+
 // ─── API Routes ──────────────────────────────────────────────────
 
 // GET /api/menu-items — public, no auth required
@@ -175,6 +183,13 @@ app.post('/api/orders', requireAuth(), async (req, res) => {
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// SPA fallback — serve index.html for any non-API route (client-side routing)
+if (fs.existsSync(distPath)) {
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
 
 // ─── Start ───────────────────────────────────────────────────────
 
