@@ -55,6 +55,13 @@ ALTER TABLE contacts ADD COLUMN IF NOT EXISTS clerk_user_id VARCHAR(255);
 -- Add clerk_user_id to orders if it was created without it
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS clerk_user_id VARCHAR(255);
 
+-- Add customer info columns to orders (from order management feature)
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name    VARCHAR(255) NOT NULL DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_phone   VARCHAR(50)  NOT NULL DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_address TEXT         NOT NULL DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_notes   TEXT         DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS updated_at       TIMESTAMP    DEFAULT NOW();
+
 -- ─── Indexes ────────────────────────────────────────────────────
 
 CREATE INDEX IF NOT EXISTS idx_menu_items_category ON menu_items (category);
