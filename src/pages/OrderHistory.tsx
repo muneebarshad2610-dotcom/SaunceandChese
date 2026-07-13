@@ -225,6 +225,11 @@ export default function OrderHistory({ onNavigateHome, onReorder }: Props) {
                             const cfg = STATUS_CONFIG[s];
                             const isActive = i <= statusIdx;
                             const isCurrent = i === statusIdx;
+                            const tsKey = s === 'confirmed' ? 'confirmedAt'
+                              : s === 'preparing' ? 'preparingAt'
+                              : s === 'out_for_delivery' ? 'outForDeliveryAt'
+                              : 'deliveredAt';
+                            const stepTime = (order as any)[tsKey] || (i === 0 ? order.createdAt : null);
                             return (
                               <div key={s} className="flex-1 flex flex-col items-center">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 font-black text-xs ${
@@ -246,6 +251,11 @@ export default function OrderHistory({ onNavigateHome, onReorder }: Props) {
                                 }`}>
                                   {cfg.label}
                                 </span>
+                                {stepTime && (
+                                  <span className="text-[7px] text-[#C41E3A]/40 mt-0.5 whitespace-nowrap font-medium">
+                                    {new Date(stepTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                )}
                               </div>
                             );
                           })}

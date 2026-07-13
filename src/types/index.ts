@@ -69,6 +69,10 @@ export interface Order {
   estimatedDeliveryAt: string | null;
   createdAt: string;
   updatedAt: string;
+  confirmedAt?: string | null;
+  preparingAt?: string | null;
+  outForDeliveryAt?: string | null;
+  deliveredAt?: string | null;
 }
 
 export interface CheckoutFormData {

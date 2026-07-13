@@ -192,3 +192,15 @@
 - **Reorder sync**: Custom `reorder-cart` event lets useCart re-read localStorage when reorder happens from App.
 - **Docs**: Updated issues.md (moved fixed items to historical, renumbered open issues). Updated session.md.
 - **Files touched**: src/components/modals/CartDrawer.tsx, src/hooks/useCart.ts, src/App.tsx, docs/issues.md, docs/session.md
+
+## Session 20 — [2026-07-14] — Cart persistence indicator visible on Navbar
+
+- **Navbar Saved badge**: Green pill "Saved" badge appears next to cart icon (desktop + mobile) when items are in cart, informing users the cart persists in localStorage.
+- **Files touched**: src/components/layout/Navbar.tsx
+
+## Session 21 — [2026-07-14] — Status timeline timestamps in OrderHistory
+
+- **Per-status timestamp columns**: Added `confirmed_at`, `preparing_at`, `out_for_delivery_at`, `delivered_at` to orders table (schema.sql). Server records the corresponding timestamp on status change (both admin and kitchen PATCH endpoints). GET endpoints return these in response.
+- **Order type**: Added `confirmedAt`, `preparingAt`, `outForDeliveryAt`, `deliveredAt` optional fields.
+- **OrderHistory**: Each status step in the timeline now shows the timestamp (HH:MM) beneath the label.
+- **Files touched**: src/db/schema.sql, server.ts, src/types/index.ts, src/pages/OrderHistory.tsx, docs/session.md

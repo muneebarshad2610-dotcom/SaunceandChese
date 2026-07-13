@@ -122,3 +122,9 @@ CREATE TABLE IF NOT EXISTS saved_addresses (
 );
 
 CREATE INDEX IF NOT EXISTS idx_saved_addresses_user ON saved_addresses (clerk_user_id);
+
+-- ─── Per-status timestamps for order timeline ───────────────
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS confirmed_at         TIMESTAMP DEFAULT NOW();
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS preparing_at         TIMESTAMP;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS out_for_delivery_at  TIMESTAMP;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivered_at         TIMESTAMP;

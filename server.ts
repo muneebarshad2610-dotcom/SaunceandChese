@@ -355,21 +355,15 @@ app.get('/api/orders', requireAuth, async (req, res) => {
               delivery_address AS "deliveryAddress", delivery_notes AS "deliveryNotes",
               items, subtotal, status, table_id AS "tableId", guest_name AS "guestName", split_bill AS "splitBill",
               session_token AS "sessionToken",
-              created_at AS "createdAt", updated_at AS "updatedAt"
+              created_at AS "createdAt", updated_at AS "updatedAt",
+              confirmed_at AS "confirmedAt", preparing_at AS "preparingAt",
+              out_for_delivery_at AS "outForDeliveryAt", delivered_at AS "deliveredAt"
        FROM orders
        WHERE clerk_user_id = $1
        ORDER BY created_at DESC`,
       [clerkUserId]
     );
 
-    // Add ETA for each active order
-    const activeCounts: Record<string, number> = {};
-    for (const row of rows) {
-      if (row.status === 'confirmed' || row.status === 'preparing') {
-        const key = (row as any).createdAt;
-        activeCounts[key] = (activeCounts[key] || 0) + 1;
-      }
-    }
     let queueIdx = 0;
     const result = rows.map((row: any) => {
       let estimatedDeliveryAt: string | null = null;
@@ -404,7 +398,9 @@ app.get('/api/orders/admin', requireAuth, async (req, res) => {
               delivery_address AS "deliveryAddress", delivery_notes AS "deliveryNotes",
               items, subtotal, status, table_id AS "tableId", guest_name AS "guestName", split_bill AS "splitBill",
               session_token AS "sessionToken",
-              created_at AS "createdAt", updated_at AS "updatedAt"
+              created_at AS "createdAt", updated_at AS "updatedAt",
+              confirmed_at AS "confirmedAt", preparing_at AS "preparingAt",
+              out_for_delivery_at AS "outForDeliveryAt", delivered_at AS "deliveredAt"
        FROM orders
        ORDER BY created_at DESC`
     );
@@ -450,9 +446,17 @@ app.patch('/api/orders/:id/status', requireAuth, async (req, res) => {
       return;
     }
 
+    const timestampCol = status === 'confirmed' ? 'confirmed_at'
+      : status === 'preparing' ? 'preparing_at'
+      : status === 'out_for_delivery' ? 'out_for_delivery_at'
+      : status === 'delivered' ? 'delivered_at'
+      : null;
+
     const { rows } = await pool.query(
       `UPDATE orders
-       SET status = $1, updated_at = NOW()
+       SET status = $1,
+           updated_at = NOW()
+           ${timestampCol ? `, ${timestampCol} = NOW()` : ''}
        WHERE id = $2
        RETURNING id, order_number AS "orderNumber", status, updated_at AS "updatedAt"`,
       [status, orderId]
@@ -1129,6 +1133,8 @@ app.get('/api/kitchen/orders', requireAuth, async (req, res) => {
       SELECT o.id, o.order_number AS "orderNumber", o.table_id AS "tableId",
              o.guest_name AS "guestName", o.items, o.subtotal, o.status,
              o.created_at AS "createdAt",
+             o.confirmed_at AS "confirmedAt", o.preparing_at AS "preparingAt",
+             o.out_for_delivery_at AS "outForDeliveryAt", o.delivered_at AS "deliveredAt",
              t.table_number AS "tableNumber"
       FROM orders o
       LEFT JOIN tables t ON o.table_id = t.id
@@ -1162,8 +1168,17 @@ app.patch('/api/kitchen/orders/:id/status', requireAuth, async (req, res) => {
       return;
     }
 
+    const timestampCol = status === 'preparing' ? 'preparing_at'
+      : status === 'out_for_delivery' ? 'out_for_delivery_at'
+      : status === 'delivered' ? 'delivered_at'
+      : null;
+
     await pool.query(
-      'UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2',
+      `UPDATE orders
+       SET status = $1,
+           updated_at = NOW()
+           ${timestampCol ? `, ${timestampCol} = NOW()` : ''}
+       WHERE id = $2`,
       [status, orderId]
     );
 
