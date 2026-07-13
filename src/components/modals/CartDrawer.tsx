@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingBag, X, Minus, Plus, Trash2 } from 'lucide-react';
+import { ShoppingBag, X, Trash2 } from 'lucide-react';
 import { SignInButton } from '@clerk/react';
 import type { CartItem } from '../../types';
 
@@ -9,7 +9,6 @@ interface Props {
   cartItemCount: number;
   cartSubtotal: number;
   onClose: () => void;
-  onAdjustQty: (index: number, delta: number) => void;
   onRemoveItem: (index: number) => void;
   onCheckout: () => void;
   checkoutLoading?: boolean;
@@ -22,7 +21,6 @@ export default function CartDrawer({
   cartItemCount,
   cartSubtotal,
   onClose,
-  onAdjustQty,
   onRemoveItem,
   onCheckout,
   checkoutLoading,
@@ -111,21 +109,9 @@ export default function CartDrawer({
                           </div>
 
                           <div className="flex justify-between items-center pt-2 mt-2 border-t border-[#C41E3A]/5">
-                            <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-xl border border-[#C41E3A]/10 scale-90 -ml-1">
-                              <button
-                                onClick={() => onAdjustQty(idx, -1)}
-                                className="w-5 h-5 flex items-center justify-center rounded hover:bg-[#C41E3A] hover:text-white transition-colors cursor-pointer"
-                              >
-                                <Minus className="w-3 h-3" />
-                              </button>
-                              <span className="font-black text-xs text-[#C41E3A]">{item.qty}</span>
-                              <button
-                                onClick={() => onAdjustQty(idx, 1)}
-                                className="w-5 h-5 flex items-center justify-center rounded hover:bg-[#C41E3A] hover:text-white transition-colors cursor-pointer"
-                              >
-                                <Plus className="w-3 h-3" />
-                              </button>
-                            </div>
+                            <span className="font-black text-xs text-[#C41E3A]/60">
+                              Qty: {item.qty}
+                            </span>
                             <span className="font-black text-base text-[#C41E3A]">
                               Rs. {item.price * item.qty}
                             </span>

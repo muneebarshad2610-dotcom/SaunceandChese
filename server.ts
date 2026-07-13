@@ -205,10 +205,19 @@ app.post('/api/orders', requireAuth(), async (req, res) => {
       return;
     }
 
+    // Serialize items to JSON string explicitly to avoid pg JSONB serialization edge cases
+    let itemsJson: string;
+    try {
+      itemsJson = JSON.stringify(parsedItems);
+    } catch {
+      res.status(400).json({ error: 'Invalid items data — failed to serialize' });
+      return;
+    }
+
     const { rows } = await pool.query(
       `INSERT INTO orders (order_number, clerk_user_id, customer_name, customer_phone, delivery_address, delivery_notes, items, subtotal, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'confirmed')
-       RETURNING id, order_number, created_at`,[orderNumber, clerkUserId, customerName.trim(), customerPhone.trim(), deliveryAddress.trim(), (deliveryNotes || '').trim(), parsedItems,
+       RETURNING id, order_number, created_at`,[orderNumber, clerkUserId, customerName.trim(), customerPhone.trim(), deliveryAddress.trim(), (deliveryNotes || '').trim(), itemsJson,
         subtotal,
       ]
     );

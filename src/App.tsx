@@ -36,7 +36,6 @@ export default function App() {
     cartSubtotal,
     addToCart,
     quickAddToCart,
-    adjustQty,
     removeItem,
     clearCart,
   } = useCart();
@@ -188,7 +187,6 @@ export default function App() {
             cartItemCount={cartItemCount}
             cartSubtotal={cartSubtotal}
             onClose={() => setIsCartOpen(false)}
-            onAdjustQty={adjustQty}
             onRemoveItem={removeItem}
             onCheckout={handleCheckout}
             checkoutLoading={checkoutLoading}
@@ -289,7 +287,6 @@ export default function App() {
           cartItemCount={cartItemCount}
           cartSubtotal={cartSubtotal}
           onClose={() => setIsCartOpen(false)}
-          onAdjustQty={adjustQty}
           onRemoveItem={removeItem}
           onCheckout={handleCheckout}
           checkoutLoading={checkoutLoading}
