@@ -29,12 +29,26 @@ CREATE TABLE IF NOT EXISTS contacts (
 
 -- Orders (linked to Clerk user)
 CREATE TABLE IF NOT EXISTS orders (
+  id                SERIAL PRIMARY KEY,
+  order_number      VARCHAR(50) UNIQUE NOT NULL,
+  clerk_user_id     VARCHAR(255) NOT NULL,
+  customer_name     VARCHAR(255) NOT NULL DEFAULT '',
+  customer_phone    VARCHAR(50) NOT NULL DEFAULT '',
+  delivery_address  TEXT NOT NULL DEFAULT '',
+  delivery_notes    TEXT DEFAULT '',
+  items             JSONB NOT NULL DEFAULT '[]',
+  subtotal          NUMERIC(10, 2) NOT NULL,
+  status            VARCHAR(50) DEFAULT 'confirmed',
+  created_at        TIMESTAMP DEFAULT NOW(),
+  updated_at        TIMESTAMP DEFAULT NOW()
+);
+
+-- Admin users (Clerk user IDs with admin privileges)
+-- After signing in on the site, run this SQL with YOUR Clerk user ID:
+--   INSERT INTO admin_users (clerk_user_id) VALUES ('user_xxxxxx');
+CREATE TABLE IF NOT EXISTS admin_users (
   id            SERIAL PRIMARY KEY,
-  order_number  VARCHAR(50) UNIQUE NOT NULL,
-  clerk_user_id VARCHAR(255) NOT NULL,
-  items         JSONB NOT NULL DEFAULT '[]',
-  subtotal      NUMERIC(10, 2) NOT NULL,
-  status        VARCHAR(50) DEFAULT 'confirmed',
+  clerk_user_id VARCHAR(255) UNIQUE NOT NULL,
   created_at    TIMESTAMP DEFAULT NOW()
 );
 

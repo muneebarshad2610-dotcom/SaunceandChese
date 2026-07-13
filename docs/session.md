@@ -67,3 +67,31 @@
   - **User profile page** — Clerk UserButton provides basic profile, no custom page
   - **Tests** — no unit, integration, or e2e tests
   - **Production deployment** — needs Railway deployment configuration and production Clerk instance setup
+
+## Session 4 — [2026-07-13] — Railway deployment fixes + DB migration fix
+
+- **Task given at start of session**: Fix white screen on Railway deployment, write .env with Clerk keys
+- **What I changed**:
+  - Fixed Railway deployment (%):
+    - Added static file serving to `server.ts`: `express.static(distPath)` + SPA `app.get('*', ...)` fallback
+    - Fixed `start` script: `node server.ts` → `tsx server.ts` (Node can't run .ts files — this was the main white screen cause)
+    - Moved `tsx` from devDependencies to dependencies (Railway needs it at runtime)
+    - Cleaned up `vite.config.ts` (removed AI Studio-specific HMR settings)
+    - Wrote `.env` with user's Clerk keys and Railway PostgreSQL template variable
+    - Updated `.env.example` with Railway-compatible instructions
+  - Fixed DB migration error (`column "clerk_user_id" does not exist`):
+    - Added `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` statements to `schema.sql`
+    - This handles existing PostgreSQL tables from previous deployments that lack the `clerk_user_id` column
+    - Removed problematic `ALTER COLUMN SET NOT NULL` that would fail on existing NULL rows
+  - Deployed: Committed all fixes to GitHub, user can redeploy on Railway
+
+- **What's working now**:
+  - Server starts and serves both API + frontend from single service on Railway
+  - Migration handles both fresh and existing databases
+  - Everything from previous session still works
+
+- **What's broken / unfinished**:
+  - **Payments** — no payment processor integrated (mock checkout only)
+  - **Order history page** — data exists in DB but no UI to view past orders
+  - **User profile page** — Clerk provides basic UserButton, no custom page
+  - **Tests** — no unit, integration, or e2e tests

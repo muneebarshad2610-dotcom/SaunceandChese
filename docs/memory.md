@@ -38,3 +38,18 @@
 
 - **Files touched**: All src/, server.ts, index.html, package.json, .env.example, .gitignore, docs/
 - **Known issues / TODO**: Payments not integrated. Order history page not built. No tests yet.
+
+## [2026-07-13] — Railway deployment fixes + DB migration fix
+
+- **What was completed**:
+  - Added static file serving to server.ts (express.static('dist')) + SPA catch-all route
+  - Fixed start script: `node server.ts` → `tsx server.ts` (Node can't run .ts directly)
+  - Moved `tsx` from devDependencies to dependencies for Railway production
+  - Cleaned up vite.config.ts (removed AI Studio HMR settings)
+  - Wrote .env with user's Clerk keys and Railway PostgreSQL reference
+  - Fixed .env.example with Railway-compatible instructions
+  - Fixed DB migration: added `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` for clerk_user_id on existing tables
+  - Updated all docs with Railway deployment info
+
+- **Files touched**: server.ts, package.json, vite.config.ts, .env, .env.example, src/db/schema.sql, docs/
+- **Known issues / TODO**: Payments not integrated. Order history page not built. Need to verify Railway deployment after migration fix.

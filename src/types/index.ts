@@ -25,10 +25,34 @@ export interface CartItem {
   customSauceType: string;
 }
 
+export type OrderStatus = 'confirmed' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled';
+
 export interface OrderDetails {
   id: string;
   total: number;
   itemsCount: number;
+}
+
+export interface Order {
+  id: number;
+  orderNumber: string;
+  clerkUserId: string;
+  customerName: string;
+  customerPhone: string;
+  deliveryAddress: string;
+  deliveryNotes: string | null;
+  items: CartItem[];
+  subtotal: number;
+  status: OrderStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CheckoutFormData {
+  customerName: string;
+  customerPhone: string;
+  deliveryAddress: string;
+  deliveryNotes: string;
 }
 
 export interface AddToCartOptions {

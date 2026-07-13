@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@clerk/react';
 import ErrorBoundary from './components/ErrorBoundary';
 import Navbar from './components/layout/Navbar';
@@ -11,12 +11,17 @@ import LocationsSection from './components/sections/LocationsSection';
 import Footer from './components/layout/Footer';
 import QuickViewModal from './components/modals/QuickViewModal';
 import CartDrawer from './components/modals/CartDrawer';
+import CheckoutForm from './components/modals/CheckoutForm';
 import OrderSuccessModal from './components/modals/OrderSuccessModal';
+import OrderHistory from './pages/OrderHistory';
+import AdminOrders from './pages/AdminOrders';
 import { useCart } from './hooks/useCart';
 import { useMenuItems } from './hooks/useMenuItems';
-import type { MenuItem, OrderDetails } from './types';
+import type { MenuItem, OrderDetails, CheckoutFormData } from './types';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
+
+type Page = 'home' | 'orders' | 'admin';
 
 export default function App() {
   const { isSignedIn, getToken } = useAuth();
@@ -36,14 +41,49 @@ export default function App() {
     clearCart,
   } = useCart();
 
+  // Page routing
+  const [currentPage, setCurrentPage] = useState<Page>('home');
+
   // Modal state
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [quickViewItem, setQuickViewItem] = useState<MenuItem | null>(null);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
   const [lastOrderDetails, setLastOrderDetails] = useState<OrderDetails | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const adminCheckedRef = useRef(false);
+
+  // Check admin status once
+  useEffect(() => {
+    if (!isSignedIn || adminCheckedRef.current) return;
+    adminCheckedRef.current = true;
+
+    (async () => {
+      try {
+        const token = await getToken();
+        const res = await fetch(`${API_BASE}/api/admin/check`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setIsAdmin(data.admin);
+        }
+      } catch {
+        // Non-critical, just hide admin features
+      }
+    })();
+  }, [isSignedIn, getToken]);
 
   // Handlers
+  const navigate = useCallback((page: Page) => {
+    setCurrentPage(page);
+    // Close cart if navigating away
+    if (page !== 'home') {
+      setIsCartOpen(false);
+    }
+  }, []);
+
   const openQuickView = useCallback((item: MenuItem) => {
     setQuickViewItem(item);
   }, []);
@@ -56,41 +96,55 @@ export default function App() {
     [quickAddToCart]
   );
 
-  const handleCheckout = useCallback(async () => {
-    // Must be signed in
+  // Open checkout form instead of submitting immediately
+  const handleCheckout = useCallback(() => {
     if (!isSignedIn) return;
-
-    setCheckoutLoading(true);
-    const orderId = 'SNC-' + Math.floor(100000 + Math.random() * 900000);
-
-    try {
-      const token = await getToken();
-      await fetch(`${API_BASE}/api/orders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          orderNumber: orderId,
-          items: cart,
-          subtotal: cartSubtotal,
-        }),
-      });
-    } catch (err) {
-      console.error('Order submission failed (proceeding anyway):', err);
-    }
-
-    setLastOrderDetails({
-      id: orderId,
-      total: cartSubtotal,
-      itemsCount: cartItemCount,
-    });
-    setShowOrderSuccess(true);
-    clearCart();
     setIsCartOpen(false);
-    setCheckoutLoading(false);
-  }, [isSignedIn, getToken, cart, cartSubtotal, cartItemCount, clearCart]);
+    setIsCheckoutOpen(true);
+  }, [isSignedIn]);
+
+  // Submit order with customer details
+  const handleConfirmCheckout = useCallback(
+    async (formData: CheckoutFormData) => {
+      if (!isSignedIn) return;
+
+      setCheckoutLoading(true);
+      const orderId = 'SNC-' + Math.floor(100000 + Math.random() * 900000);
+
+      try {
+        const token = await getToken();
+        await fetch(`${API_BASE}/api/orders`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            orderNumber: orderId,
+            items: cart,
+            subtotal: cartSubtotal,
+            customerName: formData.customerName,
+            customerPhone: formData.customerPhone,
+            deliveryAddress: formData.deliveryAddress,
+            deliveryNotes: formData.deliveryNotes,
+          }),
+        });
+      } catch (err) {
+        console.error('Order submission failed (proceeding anyway):', err);
+      }
+
+      setLastOrderDetails({
+        id: orderId,
+        total: cartSubtotal,
+        itemsCount: cartItemCount,
+      });
+      setShowOrderSuccess(true);
+      setIsCheckoutOpen(false);
+      clearCart();
+      setCheckoutLoading(false);
+    },
+    [isSignedIn, getToken, cart, cartSubtotal, cartItemCount, clearCart]
+  );
 
   const handleContactSubmit = useCallback(
     async (data: { name: string; email: string; message: string }) => {
@@ -107,10 +161,64 @@ export default function App() {
     []
   );
 
+  // Render the appropriate page
+  if (currentPage === 'orders') {
+    return (
+      <ErrorBoundary>
+        <div className="min-h-screen bg-[#FDF5E6] text-[#1A1A1A] font-sans overflow-x-hidden flex flex-col">
+          <Navbar
+            cartItemCount={cartItemCount}
+            onCartOpen={() => setIsCartOpen(true)}
+            currentPage={currentPage}
+            onNavigate={navigate}
+            isAdmin={isAdmin}
+          />
+          <OrderHistory onNavigateHome={() => navigate('home')} />
+          <CartDrawer
+            isOpen={isCartOpen}
+            cart={cart}
+            cartItemCount={cartItemCount}
+            cartSubtotal={cartSubtotal}
+            onClose={() => setIsCartOpen(false)}
+            onAdjustQty={adjustQty}
+            onRemoveItem={removeItem}
+            onCheckout={handleCheckout}
+            checkoutLoading={checkoutLoading}
+            isSignedIn={!!isSignedIn}
+          />
+        </div>
+      </ErrorBoundary>
+    );
+  }
+
+  if (currentPage === 'admin') {
+    return (
+      <ErrorBoundary>
+        <div className="min-h-screen bg-[#FDF5E6] text-[#1A1A1A] font-sans overflow-x-hidden flex flex-col">
+          <Navbar
+            cartItemCount={cartItemCount}
+            onCartOpen={() => setIsCartOpen(true)}
+            currentPage={currentPage}
+            onNavigate={navigate}
+            isAdmin={isAdmin}
+          />
+          <AdminOrders onNavigateHome={() => navigate('home')} />
+        </div>
+      </ErrorBoundary>
+    );
+  }
+
+  // Home page
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-[#FDF5E6] text-[#1A1A1A] font-sans selection:bg-[#FFB81C] selection:text-[#C41E3A] overflow-x-hidden flex flex-col">
-        <Navbar cartItemCount={cartItemCount} onCartOpen={() => setIsCartOpen(true)} />
+        <Navbar
+          cartItemCount={cartItemCount}
+          onCartOpen={() => setIsCartOpen(true)}
+          currentPage={currentPage}
+          onNavigate={navigate}
+          isAdmin={isAdmin}
+        />
 
         <main className="flex-1">
           <Hero />
@@ -178,6 +286,18 @@ export default function App() {
           onCheckout={handleCheckout}
           checkoutLoading={checkoutLoading}
           isSignedIn={!!isSignedIn}
+        />
+
+        <CheckoutForm
+          isOpen={isCheckoutOpen}
+          cartItemCount={cartItemCount}
+          cartSubtotal={cartSubtotal}
+          onClose={() => {
+            setIsCheckoutOpen(false);
+            setIsCartOpen(true); // Re-open cart if they cancel
+          }}
+          onSubmit={handleConfirmCheckout}
+          loading={checkoutLoading}
         />
 
         <OrderSuccessModal

@@ -10,16 +10,24 @@ import {
 interface NavbarProps {
   cartItemCount: number;
   onCartOpen: () => void;
+  currentPage: 'home' | 'orders' | 'admin';
+  onNavigate: (page: 'home' | 'orders' | 'admin') => void;
+  isAdmin?: boolean;
 }
 
-export default function Navbar({ cartItemCount, onCartOpen }: NavbarProps) {
+export default function Navbar({ cartItemCount, onCartOpen, currentPage, onNavigate, isAdmin }: NavbarProps) {
   return (
     <nav
       id="site-nav"
-      className="sticky top-0 z-40 bg-[#FDF5E6]/95 backdrop-blur-md border-b-4 border-[#C41E3A] py-4 px-6 md:px-12 flex justify-between items-center shadow-sm"
+      className={`sticky top-0 z-40 bg-[#FDF5E6]/95 backdrop-blur-md border-b-4 border-[#C41E3A] py-4 px-6 md:px-12 flex justify-between items-center shadow-sm ${
+        currentPage !== 'home' ? 'relative' : ''
+      }`}
     >
       {/* Brand */}
-      <div className="flex items-center gap-3">
+      <button
+        onClick={() => onNavigate('home')}
+        className="flex items-center gap-3 cursor-pointer text-left"
+      >
         <motion.div
           whileHover={{ scale: 1.1, rotate: -5 }}
           className="w-11 h-11 bg-[#FFB81C] rounded-full flex items-center justify-center retro-shadow-sm border-2 border-[#C41E3A]"
@@ -31,14 +39,40 @@ export default function Navbar({ cartItemCount, onCartOpen }: NavbarProps) {
             Sauce <span className="text-[#FFB81C]">n'</span> Cheese
           </span>
         </div>
-      </div>
+      </button>
 
       {/* Desktop nav */}
       <div className="hidden md:flex items-center gap-6 font-black uppercase tracking-wider text-xs text-[#C41E3A]">
-        <a href="#menu" className="hover:text-[#FFB81C] transition-colors">Menu</a>
-        <a href="#hot-deals" className="hover:text-[#FFB81C] transition-colors">Hot Deals</a>
-        <a href="#story" className="hover:text-[#FFB81C] transition-colors">Our Story</a>
-        <a href="#locations" className="hover:text-[#FFB81C] transition-colors">Locations</a>
+        {currentPage === 'home' && (
+          <>
+            <a href="#menu" className="hover:text-[#FFB81C] transition-colors">Menu</a>
+            <a href="#hot-deals" className="hover:text-[#FFB81C] transition-colors">Hot Deals</a>
+            <a href="#story" className="hover:text-[#FFB81C] transition-colors">Our Story</a>
+            <a href="#locations" className="hover:text-[#FFB81C] transition-colors">Locations</a>
+          </>
+        )}
+
+        <Show when="signed-in">
+          <button
+            onClick={() => onNavigate('orders')}
+            className={`transition-colors cursor-pointer ${
+              currentPage === 'orders' ? 'text-[#FFB81C]' : 'hover:text-[#FFB81C]'
+            }`}
+          >
+            My Orders
+          </button>
+        </Show>
+
+        {isAdmin && (
+          <button
+            onClick={() => onNavigate('admin')}
+            className={`transition-colors cursor-pointer ${
+              currentPage === 'admin' ? 'text-[#FFB81C]' : 'hover:text-[#FFB81C]'
+            }`}
+          >
+            Admin
+          </button>
+        )}
 
         {/* Auth buttons */}
         <Show when="signed-out">
@@ -88,6 +122,30 @@ export default function Navbar({ cartItemCount, onCartOpen }: NavbarProps) {
 
       {/* Mobile */}
       <div className="flex md:hidden items-center gap-2">
+        <Show when="signed-in">
+          <button
+            onClick={() => onNavigate('orders')}
+            className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded transition-all cursor-pointer ${
+              currentPage === 'orders'
+                ? 'bg-[#C41E3A] text-white'
+                : 'text-[#C41E3A] hover:bg-[#C41E3A]/10'
+            }`}
+          >
+            Orders
+          </button>
+        </Show>
+        {isAdmin && (
+          <button
+            onClick={() => onNavigate('admin')}
+            className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded transition-all cursor-pointer ${
+              currentPage === 'admin'
+                ? 'bg-[#C41E3A] text-white'
+                : 'text-[#C41E3A] hover:bg-[#C41E3A]/10'
+            }`}
+          >
+            Admin
+          </button>
+        )}
         <Show when="signed-out">
           <SignInButton mode="modal">
             <button className="text-[10px] font-black uppercase tracking-wider text-[#C41E3A] border-2 border-[#C41E3A] px-3 py-1 rounded-full hover:bg-[#C41E3A] hover:text-white transition-all cursor-pointer">
@@ -99,15 +157,6 @@ export default function Navbar({ cartItemCount, onCartOpen }: NavbarProps) {
               Sign Up
             </button>
           </SignUpButton>
-        </Show>
-        <Show when="signed-in">
-          <UserButton
-            appearance={{
-              elements: {
-                avatarBox: 'w-7 h-7 border-2 border-[#C41E3A] rounded-full',
-              },
-            }}
-          />
         </Show>
         <button
           onClick={onCartOpen}
