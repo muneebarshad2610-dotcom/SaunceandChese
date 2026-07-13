@@ -52,4 +52,29 @@
   - Updated all docs with Railway deployment info
 
 - **Files touched**: server.ts, package.json, vite.config.ts, .env, .env.example, src/db/schema.sql, docs/
-- **Known issues / TODO**: Payments not integrated. Order history page not built. Need to verify Railway deployment after migration fix.
+- **Known issues / TODO**: Payments not integrated. Need to verify Railway deployment after migration fix.
+
+## [2026-07-13] — Order management system (admin dashboard + order history)
+
+- **What was completed**:
+  - Built AdminOrders page — view all orders, filter by status, update order status
+  - Built OrderHistory page — view current user's past orders with status tracking
+  - Built CheckoutForm modal — delivery details form (name, phone, address, notes)
+  - Built OrderSuccessModal — confirmation with order ID + animated kitchen tracker
+  - Added API endpoints: GET /api/orders, GET /api/orders/admin, PATCH /api/orders/:id/status, GET /api/admin/check
+  - Admin check uses Clerk public_metadata.role === 'admin' (no separate DB table)
+  - CartDrawer updated with checkout flow that opens CheckoutForm first
+
+- **Files touched**: server.ts, src/App.tsx, src/pages/AdminOrders.tsx, src/pages/OrderHistory.tsx, src/components/modals/CheckoutForm.tsx, src/components/modals/OrderSuccessModal.tsx, src/components/modals/CartDrawer.tsx, docs/
+- **Known issues / TODO**: Payments not integrated.
+
+## [2026-07-13] — Fix: JSON items serialization for pg + remove cart adjust feature
+
+- **What was completed**:
+  - Fixed `invalid input syntax for type json` error: explicitly JSON.stringify() items array before passing to pg query for JSONB column, with try/catch guard
+  - Removed cart quantity adjust (+/-) buttons from CartDrawer — now shows static Qty label with remove (trash) button only
+  - The `adjustQty` hook function remains in useCart.ts for future re-enablement
+  - Committed and pushed to GitHub
+
+- **Files touched**: server.ts, src/App.tsx, src/components/modals/CartDrawer.tsx, docs/
+- **Known issues / TODO**: Payments not integrated.

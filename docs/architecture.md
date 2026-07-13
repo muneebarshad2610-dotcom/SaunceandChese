@@ -71,6 +71,14 @@ On server startup, `server.ts` auto-runs `schema.sql` (idempotent `CREATE TABLE 
 | GET | `/api/menu-items` | None | Returns all products from PostgreSQL |
 | POST | `/api/contact` | None | Saves contact form (optionally linked to Clerk user) |
 | POST | `/api/orders` | `requireAuth()` | Creates order record linked to Clerk user |
+| GET | `/api/orders` | `requireAuth()` | Returns current user's orders |
+| GET | `/api/orders/admin` | `requireAuth()` + admin check | Returns ALL orders (admin only) |
+| PATCH | `/api/orders/:id/status` | `requireAuth()` + admin check | Updates order status (admin only) |
+| GET | `/api/admin/check` | `requireAuth()` | Checks if current user has admin role |
+
+### Items JSON Serialization
+
+`POST /api/orders` explicitly `JSON.stringify()`s the items array before passing to the PostgreSQL query to avoid edge cases in the `pg` library's JSONB type handler. A try/catch guard provides a `400` response if serialization fails.
 
 ---
 
@@ -115,9 +123,9 @@ Page Load (StrictMode)
 2. (Optional) Signs in via Clerk modal in nav bar
 3. Clicks "Customize" on a menu item → Quick View modal opens
 4. Customizes cheese pull, sauce, size → adds to cart → cart drawer opens
-5. Adjusts quantities in cart
+5. Reviews items in cart (remove items with trash button, quantity shown as label)
 6. If signed out: sees "Sign In to Checkout" button → signs in
-7. If signed in: clicks "Checkout Now" → order submitted to backend → success modal
+7. If signed in: clicks "Checkout Now" → fills delivery details form → order submitted to backend → success modal
 8. Cart is cleared, order recorded in database
 
 ---
@@ -152,6 +160,9 @@ Page Load (StrictMode)
 │   ├── hooks/
 │   │   ├── useCart.ts          # Cart state + localStorage persistence
 │   │   └── useMenuItems.ts     # Fetch menu items from API
+│   ├── pages/
+│   │   ├── OrderHistory.tsx        # User's past orders view
+│   │   └── AdminOrders.tsx         # Admin dashboard — view all orders + update status
 │   ├── components/
 │   │   ├── ErrorBoundary.tsx   # Error boundary with retro fallback UI
 │   │   ├── layout/
@@ -166,7 +177,8 @@ Page Load (StrictMode)
 │   │   │   └── LocationsSection.tsx # Address + contact form with error display
 │   │   ├── modals/
 │   │   │   ├── QuickViewModal.tsx   # Product customization (cheese-pull fixed)
-│   │   │   ├── CartDrawer.tsx       # Cart with Clerk auth gate on checkout
+│   │   │   ├── CartDrawer.tsx       # Cart with Clerk auth gate on checkout (no qty adjust)
+│   │   │   ├── CheckoutForm.tsx     # Delivery details form before order submission
 │   │   │   └── OrderSuccessModal.tsx
 │   │   └── ui/
 │   │       ├── MenuCard.tsx

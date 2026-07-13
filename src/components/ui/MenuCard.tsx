@@ -42,7 +42,7 @@ export default function MenuCard({ item, onQuickView, onQuickAdd }: Props) {
           <button
             onClick={() => onQuickView(item)}
             className="bg-[#F5DEB3] hover:bg-[#ebd5ad] text-[#C41E3A] p-2.5 rounded-full border-2 border-[#C41E3A] transition-all flex items-center justify-center cursor-pointer"
-            title="Customize & Pull Cheese"
+            title="Customize & Add"
           >
             <Sliders className="w-5 h-5" />
           </button>

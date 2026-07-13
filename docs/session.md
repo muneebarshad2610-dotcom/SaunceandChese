@@ -95,3 +95,64 @@
   - **Order history page** — data exists in DB but no UI to view past orders
   - **User profile page** — Clerk provides basic UserButton, no custom page
   - **Tests** — no unit, integration, or e2e tests
+
+## Session 5 — [2026-07-13] — Order management system (admin dashboard + order history)
+
+- **Task given at start of session**: Build complete order management system
+- **What I changed**:
+  - Built `src/pages/AdminOrders.tsx` — admin dashboard with:
+    - Lists all orders with customer info, items, subtotal, status
+    - Status filter tabs (All / Confirmed / Preparing / Out for Delivery / Delivered / Cancelled)
+    - Status update dropdown per order
+    - Admin role check via Clerk `public_metadata.role === 'admin'`
+  - Built `src/pages/OrderHistory.tsx` — user's past orders with:
+    - List of orders linked to their Clerk user ID
+    - Status badges with color coding
+    - Empty state when no orders exist
+  - Built `src/components/modals/CheckoutForm.tsx` — delivery details form:
+    - Name, phone, delivery address (required), delivery notes (optional)
+    - Client-side validation
+    - Opens before order submission instead of submitting directly from cart
+  - Built `src/components/modals/OrderSuccessModal.tsx` — confirmation with:
+    - Order ID display, subtotal, item count
+    - Animated "Live Kitchen Tracker" steps
+  - Updated `server.ts` with new API routes:
+    - `GET /api/orders` — returns current user's orders
+    - `GET /api/orders/admin` — returns all orders (admin only)
+    - `PATCH /api/orders/:id/status` — update order status (admin only)
+    - `GET /api/admin/check` — checks if user has admin role in Clerk metadata
+  - Updated `App.tsx` — navigation between home/orders/admin pages, checkout flow now opens CheckoutForm first
+  - Updated `CartDrawer.tsx` — checkout button opens CheckoutForm instead of submitting directly
+
+- **Files touched**: server.ts, src/App.tsx, src/pages/AdminOrders.tsx, src/pages/OrderHistory.tsx, src/components/modals/CheckoutForm.tsx, src/components/modals/OrderSuccessModal.tsx, src/components/modals/CartDrawer.tsx
+
+- **What's working now**:
+  - Full order lifecycle: cart → checkout form → API → DB → user order history → admin management
+  - Admin role checked via Clerk user metadata (no separate DB table)
+  - Everything from previous sessions still works
+
+- **What's broken / unfinished**:
+  - **Payments** — no payment processor integrated (mock checkout only)
+  - **User profile page** — Clerk provides basic UserButton, no custom page
+  - **Tests** — no unit, integration, or e2e tests
+
+## Session 6 — [2026-07-13] — Fix JSON items serialization + remove cart adjust buttons
+
+- **Task given at start of session**: Fix "invalid input syntax for type json" error on POST /api/orders, then remove adjust features and push
+- **What I changed**:
+  - **JSON fix**: Explicitly `JSON.stringify()` the items array before passing to the pg query for the JSONB column, with a try/catch guard — fixes `invalid input syntax for type json` error caused by pg library's internal JSONB serialization producing malformed JSON
+  - **Remove adjust**: Removed quantity +/- buttons from CartDrawer. Cart items now show a static "Qty: X" label with the remove (trash) button only. The `adjustQty` hook function remains in `useCart.ts` for future re-enablement
+  - Committed and pushed to GitHub
+  - Updated all docs to reflect changes
+
+- **Files touched**: server.ts, src/App.tsx, src/components/modals/CartDrawer.tsx, docs/
+
+- **What's working now**:
+  - Items are properly serialized for the JSONB column — no more JSON parse errors
+  - Cart UI simplified — items show quantity label and remove button only
+  - Everything from previous sessions still works
+
+- **What's broken / unfinished**:
+  - **Payments** — no payment processor integrated (mock checkout only)
+  - **User profile page** — Clerk provides basic UserButton, no custom page
+  - **Tests** — no unit, integration, or e2e tests

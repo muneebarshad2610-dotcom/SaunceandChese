@@ -19,7 +19,7 @@
 - [x] Hot Deals section layout with deal cards
 - [x] Quick View product customization modal (cheese pull level, sauce type, size, quantity)
 - [x] Interactive cheese-pull SVG visualizer with drag interaction
-- [x] Shopping cart drawer (items list, quantity controls, subtotal, remove)
+- [x] Shopping cart drawer (items list, subtotal, remove button, quantity labels)
 - [x] Cart persistence in localStorage
 - [x] Order success modal with receipt and "Live Kitchen Tracker"
 
@@ -50,8 +50,21 @@
 - [x] Input validation — email format regex, required field checks
 - [x] Environment variables managed via .env and dotenv
 - [x] POST /api/orders endpoint — creates order records in database
+- [x] GET /api/orders — returns current user's orders
+- [x] GET /api/orders/admin — returns all orders (admin only)
+- [x] PATCH /api/orders/:id/status — update order status (admin only)
+- [x] GET /api/admin/check — checks if current user has admin role
+- [x] Admin check via Clerk public_metadata.role === 'admin' (no DB table)
+- [x] Items JSON serialization fix — explicit JSON.stringify() for pg JSONB column
 - [x] Order submission linked to authenticated Clerk user
 - [ ] Payment processing integration
+
+## Phase 5b: Order Management UI [Done]
+
+- [x] Order history page — users can view their past orders with status tracking
+- [x] Admin orders dashboard — view all orders, filter by status, update order status
+- [x] Checkout form — delivery details (name, phone, address, notes) before submission
+- [x] Order success modal — confirmation with order ID + animated kitchen tracker
 
 ## Phase 6: Payments [Not Started]
 
@@ -66,8 +79,9 @@
 - [x] Protected checkout — cart drawer shows "Sign In to Checkout" if not authenticated
 - [x] Backend session verification — Clerk `requireAuth()` middleware on POST /api/orders
 - [x] Orders stored with `clerk_user_id` — tied to authenticated user
+- [x] Order history page — users can view past orders from their account
+- [x] Admin role check via Clerk public_metadata
 - [ ] User profile page — Clerk provides UserButton but no custom profile page
-- [ ] Order history page — data exists in DB but no UI to view past orders
 - [ ] Saved addresses and preferences — per-user settings not yet implemented
 
 ## Phase 8: Polish & Quality [Done]

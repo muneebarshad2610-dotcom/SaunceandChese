@@ -103,9 +103,17 @@ export default function CartDrawer({
                                 Size: {item.selectedSize}
                               </span>
                             )}
-                            <span className="bg-[#FFB81C]/10 text-[#C41E3A] px-1.5 py-0.5 rounded border border-[#FFB81C]/20">
-                              Cheese Pull: x{item.customCheese}
-                            </span>
+                            {item.addons?.map((addon, i) => (
+                              <span key={i} className={`px-1.5 py-0.5 rounded border ${
+                                addon.type === 'extra_cheese'
+                                  ? 'bg-[#FFB81C]/15 text-[#C41E3A] border-[#FFB81C]/30'
+                                  : addon.type === 'drink'
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    : 'bg-[#C41E3A]/5 text-[#C41E3A] border-[#C41E3A]/10'
+                              }`}>
+                                {addon.name}{addon.price > 0 ? ` (+Rs.${addon.price})` : ''}
+                              </span>
+                            ))}
                           </div>
 
                           <div className="flex justify-between items-center pt-2 mt-2 border-t border-[#C41E3A]/5">
@@ -113,7 +121,7 @@ export default function CartDrawer({
                               Qty: {item.qty}
                             </span>
                             <span className="font-black text-base text-[#C41E3A]">
-                              Rs. {item.price * item.qty}
+                              Rs. {((item.unitPrice ?? (item as any).price ?? 0) + (item.addons?.reduce((a, ad) => a + ad.price, 0) ?? 0)) * item.qty}
                             </span>
                           </div>
                         </div>

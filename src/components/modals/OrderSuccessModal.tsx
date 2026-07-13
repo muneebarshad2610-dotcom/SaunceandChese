@@ -3,10 +3,10 @@ import { X, CheckCircle2, Flame, Sparkles, Layers, MapPin } from 'lucide-react';
 import type { OrderDetails } from '../../types';
 
 const KITCHEN_STEPS = [
-  { label: 'Cheddar Double Churned', icon: Flame, text: 'Proprietary golden sauce customized to perfection' },
-  { label: 'Pizza Baked Hot', icon: Sparkles, text: 'Sizzling in the deck ovens at KAECHS Block 5' },
-  { label: 'Drizzled & Loaded', icon: Layers, text: 'Smothering pizza and hot deals in warm cheese layers' },
-  { label: 'Rider Out on KAECHS Lane', icon: MapPin, text: 'Speeding through Karachi, arriving gooey and fresh' },
+  { label: 'Order Confirmed', icon: Flame, text: 'Restaurant has received your order and is prepping it' },
+  { label: 'Being Prepared', icon: Sparkles, text: 'Sizzling in the kitchen at KAECHS Block 5' },
+  { label: 'Packed & Ready', icon: Layers, text: 'Freshly made and packed with care' },
+  { label: 'Rider Out on KAECHS Lane', icon: MapPin, text: 'Speeding through Karachi, arriving hot and fresh' },
 ];
 
 interface Props {

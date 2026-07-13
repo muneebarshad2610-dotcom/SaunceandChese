@@ -293,11 +293,12 @@ export default function OrderHistory({ onNavigateHome }: Props) {
                                     <p className="text-[10px] text-[#C41E3A]/50">
                                       x{item.qty}
                                       {item.selectedSize && ` • ${item.selectedSize}`}
+                                      {item.addons && item.addons.length > 0 && ` • ${item.addons.map((a: any) => a.name).join(' + ')}`}
                                     </p>
                                   </div>
                                 </div>
                                 <span className="font-black text-xs text-[#C41E3A]">
-                                  Rs. {item.price * item.qty}
+                                  Rs. {(item.unitPrice ?? item.price ?? 0) * item.qty}
                                 </span>
                               </div>
                             ))}

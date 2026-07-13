@@ -29,13 +29,15 @@ Sauce n' Cheese is a **full-stack React + Express application** that serves as a
   - Quantity selector (+/-)
   - "Add to Cravings Basket" button
 - **Shopping cart drawer** — right-side slide-out panel with:
-  - Cart items with images, modifiers (size, cheese level), quantity controls (+/-), remove button
+  - Cart items with images, modifiers (size, cheese level), remove button (trash icon)
+  - Static quantity labels (no +/- adjust buttons)
   - Subtotal calculation
   - Empty cart state
   - Cart persistence via `localStorage` (`snc_cart` key)
   - **Auth gate**: "Sign In to Checkout" shown when not authenticated
 - **Checkout flow** — clicking "Checkout Now":
   - Requires Clerk authentication (gated by `isSignedIn`)
+  - Opens **delivery details form** (name, phone, address, notes) before submission
   - Sends order to `POST /api/orders` with Bearer token from Clerk
   - Generates order ID (SNC-XXXXXX), shows "Order Locked In!" success modal
   - Displays "Live Kitchen Tracker" with animated steps
@@ -56,16 +58,29 @@ Sauce n' Cheese is a **full-stack React + Express application** that serves as a
 - **Retro-brutalist visual design** — Tailwind theme with three-color palette (Crimson Red #C41E3A, Golden Yellow #FFB81C, Alabaster Cream #FDF5E6)
 - **Responsive layout** — mobile-first grid with breakpoints
 
+### Order Management
+
+- **Order history page** — authenticated users can view their past orders with status tracking
+- **Admin orders dashboard** — view ALL orders, filter by status, update order status (requires `role: 'admin'` in Clerk public_metadata)
+- **Checkout form** — delivery details modal (name, phone, address, delivery notes) before order submission
+- **Order success modal** — confirmation with order ID, animated "Live Kitchen Tracker" steps
+
 ### Backend
 
 - **Express server** with auto-migration and seed on startup
 - **PostgreSQL database** hosted on Railway
 - **API endpoints**:
+  - `GET /api/health` — health check
   - `GET /api/menu-items` — public, returns all products
   - `POST /api/contact` — public, saves submissions (optionally linked to Clerk user)
   - `POST /api/orders` — protected (requires Clerk auth), creates order records
-  - `GET /api/health` — health check
+  - `GET /api/orders` — protected, returns current user's orders
+  - `GET /api/orders/admin` — protected + admin check, returns ALL orders
+  - `PATCH /api/orders/:id/status` — protected + admin check, updates order status
+  - `GET /api/admin/check` — protected, checks if current user has admin role
 - **Clerk session verification** via `@clerk/express` middleware
+- **Admin role check** via Clerk `public_metadata.role === 'admin'` (no separate DB table)
+- **Items JSON serialization** — explicitly `JSON.stringify()` for pg JSONB column with try/catch guard
 - **Input validation** — email regex, required field checks
 - **CORS configured** — read from `CORS_ORIGINS` env var
 
@@ -75,7 +90,7 @@ Sauce n' Cheese is a **full-stack React + Express application** that serves as a
 |-------|---------|--------|
 | `menu_items` | Product catalog (13 seeded items) | Active |
 | `contacts` | Contact form submissions (linked to Clerk user ID) | Active |
-| `orders` | Order records (order_number, clerk_user_id, items JSONB, subtotal) | Active |
+| `orders` | Order records (order_number, clerk_user_id, items JSONB, subtotal, status, customer info) | Active — 6 statuses: confirmed, preparing, out_for_delivery, delivered, cancelled |
 
 ### Environment Variables
 
@@ -91,7 +106,6 @@ Sauce n' Cheese is a **full-stack React + Express application** that serves as a
 ### Missing / Not Implemented
 
 - **Payment processing** — Stripe/Razorpay not yet integrated
-- **Order history page** — not built yet (data exists in DB)
 - **User profile page** — Clerk provides UserButton but no custom profile page
 - **Unit / integration / e2e tests**
 - **PWA / service worker**

@@ -82,11 +82,13 @@
 
 12. **No payment processing**: Checkout generates a mock order. No real payment is processed.
 
-13. **No order history page**: Orders are stored in DB with `clerk_user_id` but no UI exists to view them.
+13. **~~No order history page~~** **[FIXED]** — OrderHistory.tsx and AdminOrders.tsx built. Users can view past orders, admins can view all orders + update status.
 
-14. **No tests**: Zero unit, integration, or e2e tests exist.
+14. **No payment processing**: Checkout generates a mock order. No real payment is processed.
 
-15. **No PWA support**: No service worker or manifest for offline/progressive capabilities.
+15. **No tests**: Zero unit, integration, or e2e tests exist.
+
+16. **No PWA support**: No service worker or manifest for offline/progressive capabilities.
 
 ---
 

@@ -85,8 +85,6 @@ app.get('/api/menu-items', async (_req, res) => {
         price_regular AS "regular",
         price_large   AS "large",
         description, image,
-        base_cheese   AS "baseCheese",
-        base_sauce    AS "baseSauce",
         created_at, updated_at
       FROM menu_items
       ORDER BY id
@@ -108,8 +106,7 @@ app.get('/api/menu-items', async (_req, res) => {
           : undefined,
         description: row.description,
         image: row.image,
-        baseCheese: row.baseCheese,
-        baseSauce: row.baseSauce,
+
       };
     });
 
@@ -174,7 +171,13 @@ async function isAdminUser(clerkUserId: string): Promise<boolean> {
 app.post('/api/orders', requireAuth(), async (req, res) => {
   try {
     const { orderNumber, items, subtotal, customerName, customerPhone, deliveryAddress, deliveryNotes } = req.body;
-    const clerkUserId = (req as any).auth.userId;
+    const clerkUserId = (req as any).auth?.userId ?? null;
+
+    if (!clerkUserId) {
+      console.error('POST /api/orders failed: clerkUserId is null/undefined — auth:', JSON.stringify((req as any).auth));
+      res.status(401).json({ error: 'Authentication required — user ID not found' });
+      return;
+    }
 
     // Normalize items if they arrive as a JSON string (safety for double-stringification)
     const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
