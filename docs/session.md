@@ -69,6 +69,17 @@
   - **Clerk production instance** — currently running on dev instance
   - **Cart addon pricing** — useCart.ts still uses hardcoded constants for cart pricing, may differ from dynamically displayed prices
 
+## Session 13 — [2026-07-14] — Fix broken marquee image URLs
+
+- **Fixed two broken marquee images**: Replaced 404 Unsplash URLs with verified working food photos.
+- **Files touched**: src/components/sections/InstagramMarquee.tsx
+
+## Session 12 — [2026-07-14] — Fix broken cheese pull images
+
+- **Fixed Hero cheese pull image**: Replaced broken burger image with working pizza cheese pull image. Updated badge text to "Freshly Pulled Cheese".
+- **Fixed Instagram Marquee images**: Replaced all 6 carousel images with reliable Unsplash URLs.
+- **Files touched**: src/components/sections/Hero.tsx, src/components/sections/InstagramMarquee.tsx
+
 ## Session 11 — [2026-07-14] — Allow managers/admins to access kitchen
 
 - **Updated kitchen access**: Modified `isKitchenUser()` to accept 'admin', 'manager', and 'kitchen' roles. Updated App.tsx to check kitchen access for all users (not just non-admins).

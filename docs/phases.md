@@ -7,7 +7,7 @@
 - [x] Hero section with brand name, tagline, CTAs
 - [x] "Our Story" narrative section with imagery
 - [x] Locations section with hardcoded address, phone, maps link
-- [x] Instagram brand marquee with food imagery
+- [x] Instagram brand marquee with food imagery (horizontal scrolling carousel — all images verified working)
 - [x] Footer with brand info and social link
 - [x] Retro-brutalist visual design system (colors, fonts, shadows, animations)
 - [x] Responsive layout (mobile through desktop)
@@ -17,11 +17,11 @@
 - [x] Menu section layout with filter tabs (All/Classic/Special)
 - [x] Menu item card design (image, name, description, price, customize/quick-add buttons)
 - [x] Hot Deals section layout with deal cards
-- [x] Quick View product customization modal (cheese pull level, sauce type, size, quantity)
-- [x] Interactive cheese-pull SVG visualizer with drag interaction
+- [x] Quick View product customization modal (sauce type, size, quantity, addons)
 - [x] Shopping cart drawer (items list, subtotal, remove button, quantity labels)
 - [x] Cart persistence in localStorage
 - [x] Order success modal with receipt and "Live Kitchen Tracker"
+- [x] Hero section with animated cheese pull image (gentle rotation animation)
 
 ## Phase 3: Contact & Feedback [Done]
 
@@ -144,7 +144,7 @@
 - [x] SEO metadata and Open Graph tags — full OG/Twitter card meta tags
 - [x] Image optimization and lazy loading — `loading="lazy"` on all below-fold images
 - [x] Proper page title — "Sauce n' Cheese — Karachi's Gooiest Feast"
-- [x] Fix cheese-pull drag drift bug — using `useRef` + `info.point.y`
+- [x] Hero cheese pull animation — gentle rotation of cheese pull image
 - [x] Remove unused dependencies — `@google/genai`, `railway` removed
 - [x] Proper page routing — `/`, `/menu`, `/orders`, `/admin`, `/kitchen`, `/table/:token` via History API
 - [ ] Unit tests — not yet implemented
