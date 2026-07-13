@@ -14,71 +14,57 @@
 
 ## Session 3 — [2026-07-13] — Complete rebuild with Clerk auth + production-ready features
 
-- **Task given at start of session**: "Continue making it prod ready" → then "Delete it all except docs, create again with Clerk auth"
-- **What I changed**:
-  - Deleted all old source code (src/, server.ts, index.html, login-helper.cjs, README.md, metadata.json)
-  - Installed Clerk deps: `@clerk/clerk-react`, `@clerk/express`, later migrated to `@clerk/react` v6
-  - Created `server.ts` — Express server with auto-migration on startup
-  - Created database layer: `src/db/pool.ts`, `src/db/schema.sql`, `src/db/seed.sql`
-  - Created React frontend with ClerkProvider, Show, useAuth
-  - All UI components (Hero, Story, Menu, Deals, Marquee, Locations, Footer)
-  - All modals (QuickView, CartDrawer, OrderSuccess)
-  - ErrorBoundary, SkeletonCard, loading skeletons, SEO/OG tags, lazy loading
-  - Clerk CLI initialized and logged in
-  - Cleaned up unused dependencies
-  - Committed and pushed
+- Full-stack rebuild with Clerk auth, Express, PostgreSQL, all UI components, modals, error boundaries, SEO.
 
 ## Session 4 — [2026-07-13] — Railway deployment fixes + DB migration fix
 
-- Added static file serving, fixed start script, moved tsx to deps
-- Fixed DB migration with ALTER TABLE IF NOT EXISTS for clerk_user_id
-- Committed and pushed
+- Added static file serving, fixed start script, moved tsx to deps, DB migration fix.
 
 ## Session 5 — [2026-07-13] — Order management system (admin dashboard + order history)
 
-- Built AdminOrders, OrderHistory, CheckoutForm, OrderSuccessModal
-- Added API routes: GET /api/orders, GET /api/orders/admin, PATCH /api/orders/:id/status, GET /api/admin/check
-- Updated App.tsx with page routing for orders/admin
+- Built AdminOrders, OrderHistory, CheckoutForm, OrderSuccessModal, added API routes.
 
 ## Session 6 — [2026-07-13] — Fix JSON items serialization + remove cart adjust buttons
 
-- Fixed `invalid input syntax for type json` error — explicit JSON.stringify() with try/catch
-- Removed quantity +/- buttons from CartDrawer
+- Fixed JSONB serialization error, removed cart qty adjust buttons.
 
 ## Session 7 — [2026-07-14] — Auth rewrite + proper page routing
 
-- **Task given at start of session**: Fix "clerkUserId is null/undefined" error on POST /api/orders
-- **What I changed**:
-  - **Server-side auth rewrite**: Replaced buggy `@clerk/express` (`clerkMiddleware` + `requireAuth`) with a custom `requireAuth` middleware using `verifyToken(token, { secretKey })` from `@clerk/backend`. The old middleware had a bug where `req.auth` could be `undefined` instead of always being set. The custom middleware:
-    - Extracts token from `Authorization: Bearer <token>` header
-    - Guards against `null`, `undefined`, literal `"null"`/`"undefined"` strings, and tokens shorter than 10 chars
-    - Calls `verifyToken(token, { secretKey })` to verify the Clerk JWT directly
-    - Always sets `req.auth = { userId: payload.sub }` on success
-    - Always returns 401 with clear error on failure
-  - **Frontend null-token guards**: Added `if (!token) return/throw` checks on `getToken()` calls in:
-    - `App.tsx` — handleConfirmCheckout, admin check
-    - `AdminOrders.tsx` — checkAdmin, fetchOrders, updateStatus
-    - `OrderHistory.tsx` — fetchOrders
-  - **Page routing refactor**: Split the single scroll-page into proper URL-based pages:
-    - `/` — Hero, Story, InstagramMarquee, Locations (brand/marketing)
-    - `/menu` — MenuSection, DealsSection (products + deals)
-    - `/orders` — OrderHistory
-    - `/admin` — AdminOrders
-    - All pages share a `renderShell()` with Navbar, Footer, and all modals
-  - **Navbar update**: Replaced anchor links (`#menu`, `#story`, etc.) with proper page navigation buttons using History API
-  - **Hero CTAs**: Changed from `<a href="#menu">` to `<button onClick>` that navigates to `/menu`
+- Replaced buggy @clerk/express with custom verifyToken() from @clerk/backend
+- Split single scroll-page into `/`, `/menu`, `/orders`, `/admin` with History API routing
+- Updated Navbar/Hero for page-based navigation
 
-- **Files touched**: server.ts, src/App.tsx, src/pages/AdminOrders.tsx, src/pages/OrderHistory.tsx, src/components/layout/Navbar.tsx, src/components/sections/Hero.tsx, docs/
+## Session 8 — [2026-07-14] — Complete admin system (products, users, add-ons, manager role)
+
+- **Task given**: Admin/manager role, product/deal CRUD, user role management, add-on management
+- **What I changed**:
+  - **Manager role**: Updated `isAdminUser()` to accept both `'admin'` and `'manager'` roles. Created `requireAdminOrManager()` helper.
+  - **Product CRUD API**: Added `POST /api/menu-items`, `PUT /api/menu-items/:id`, `DELETE /api/menu-items/:id` — admin/manager only
+  - **User management API**: Added `GET /api/users` (list Clerk users), `PATCH /api/users/:id/role` (update role to user/manager/admin) — admin/manager only
+  - **Add-ons system**: 
+    - Added `addons` table to schema.sql (type: sauce/drink/extra, name, price, is_active, sort_order)
+    - Added seed data for default sauces (Ketchup, Mayo, etc.), drinks (Pepsi, 7 Up, etc.), extras (Extra Cheese)
+    - Added CRUD API: `GET /api/addons` (public, active only), `GET/POST/PUT/DELETE /api/addons` (admin/manager)
+  - **AdminDashboard.tsx**: Tabbed interface with Orders, Products, Users, Add-ons tabs. Hoisted admin/manager access check with "Access Denied" fallback.
+  - **AdminProducts.tsx**: Full CRUD UI for menu items with create/edit modal, search, category filter, image preview, expand/collapse details
+  - **AdminUsers.tsx**: User list from Clerk API with search and role dropdown (user/manager/admin)
+  - **AdminAddons.tsx**: Add-on management with create/edit/delete, type filter, active/inactive toggle, sort order
+  - **QuickViewModal.tsx**: Now fetches add-ons dynamically from `GET /api/addons` with fallback to hardcoded defaults
+  - **types/index.ts**: Added `AddonItem` interface, `fetchAddons()` with caching, `clearAddonCache()`, helper functions. Kept backward-compatible `SAUCE_OPTIONS`, `DRINK_OPTIONS`, `EXTRA_CHEESE_PRICE` exports.
+
+- **Files touched**: server.ts, src/db/schema.sql, src/db/seed.sql, src/App.tsx, src/types/index.ts, src/pages/AdminDashboard.tsx (new), src/pages/AdminProducts.tsx (new), src/pages/AdminUsers.tsx (new), src/pages/AdminAddons.tsx (new), src/pages/AdminOrders.tsx, src/components/modals/QuickViewModal.tsx, docs/
 
 - **What's working now**:
-  - Backend auth is reliable — uses `verifyToken()` from `@clerk/backend` directly
-  - Frontend guards against null tokens everywhere
-  - Proper page routing: `/`, `/menu`, `/orders`, `/admin`
-  - Users see only the data they need per page
-  - Everything from previous sessions still works
+  - Manager role works like admin (sees same nav, accesses same API endpoints)
+  - Full product/deal CRUD via admin UI
+  - User role management via admin UI (promote to manager/admin)
+  - Add-on management (sauces, drinks, extras) with dynamic frontend integration
+  - QuickViewModal shows dynamically managed add-ons
+  - Tabbed admin dashboard with access control
 
 - **What's broken / unfinished**:
   - **Payments** — no payment processor integrated (mock checkout only)
   - **User profile page** — Clerk provides basic UserButton, no custom page
   - **Tests** — no unit, integration, or e2e tests
   - **Clerk production instance** — currently running on dev instance
+  - **Cart addon pricing** — useCart.ts still uses hardcoded constants for cart pricing, may differ from dynamically displayed prices

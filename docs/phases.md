@@ -45,20 +45,23 @@
 - [x] Express server created (server.ts) with auto-migration and seed on startup
 - [x] API endpoints: GET /api/menu-items, POST /api/contact, GET /api/health
 - [x] PostgreSQL database connected — hosted on Railway
-- [x] Database schema (3 tables: menu_items, contacts, orders) auto-applied
+- [x] Database schema auto-applied (menu_items, contacts, orders, addons)
 - [x] CORS configured — read from CORS_ORIGINS env var
 - [x] Input validation — email format regex, required field checks
 - [x] Environment variables managed via .env and dotenv
 - [x] POST /api/orders endpoint — creates order records in database
 - [x] GET /api/orders — returns current user's orders
-- [x] GET /api/orders/admin — returns all orders (admin only)
-- [x] PATCH /api/orders/:id/status — update order status (admin only)
-- [x] GET /api/admin/check — checks if current user has admin role
-- [x] Admin check via Clerk public_metadata.role === 'admin' (no DB table)
+- [x] GET /api/orders/admin — returns all orders (admin/manager only)
+- [x] PATCH /api/orders/:id/status — update order status (admin/manager only)
+- [x] GET /api/admin/check — checks if current user has admin/manager role
+- [x] Admin/manager role check via Clerk public_metadata.role
 - [x] Items JSON serialization fix — explicit JSON.stringify() for pg JSONB column
 - [x] Order submission linked to authenticated Clerk user
 - [x] Custom auth middleware — replaced buggy @clerk/express with verifyToken() from @clerk/backend
 - [x] Null-token guards on all frontend getToken() calls
+- [x] Product CRUD — POST/PUT/DELETE /api/menu-items (admin/manager only)
+- [x] User management — GET /api/users, PATCH /api/users/:id/role (admin/manager only)
+- [x] Add-on CRUD — GET/POST/PUT/DELETE /api/addons (public GET, admin for mutations)
 - [ ] Payment processing integration
 
 ## Phase 5b: Order Management UI [Done]
@@ -67,6 +70,20 @@
 - [x] Admin orders dashboard — view all orders, filter by status, update order status
 - [x] Checkout form — delivery details (name, phone, address, notes) before submission
 - [x] Order success modal — confirmation with order ID + animated kitchen tracker
+
+## Phase 5c: Product & Add-on Management UI [Done]
+
+- [x] Admin dashboard — tabbed interface (Orders, Products, Users, Add-ons)
+- [x] Product CRUD — AdminProducts.tsx with create/edit modal, search, category filter, image preview
+- [x] Add-on management — AdminAddons.tsx with sauces, drinks, extras CRUD
+- [x] Dynamic add-on fetch — QuickViewModal fetches from API with hardcoded fallback
+- [x] Add-on cache invalidation — clearAddonCache() after mutations
+
+## Phase 5d: User & Role Management [Done]
+
+- [x] Manager role — accepts both 'admin' and 'manager' roles
+- [x] User management UI — AdminUsers.tsx with list, search, role dropdown
+- [x] Role API — PATCH /api/users/:id/role sets public_metadata.role
 
 ## Phase 6: Payments [Not Started]
 
@@ -79,10 +96,11 @@
 - [x] Clerk integration — installed `@clerk/react` v6, wraps app with `<ClerkProvider>`
 - [x] Sign-in / Sign-up UI — Clerk pre-built components (`SignInButton`, `SignUpButton`, `UserButton`)
 - [x] Protected checkout — cart drawer shows "Sign In to Checkout" if not authenticated
-- [x] Backend session verification — custom middleware using `verifyToken()` from `@clerk/backend` (replaced buggy @clerk/express)
+- [x] Backend session verification — custom middleware using `verifyToken()` from `@clerk/backend`
 - [x] Orders stored with `clerk_user_id` — tied to authenticated user
 - [x] Order history page — users can view past orders from their account
-- [x] Admin role check via Clerk public_metadata
+- [x] Admin/manager role check via Clerk public_metadata
+- [x] User role management via admin UI
 - [ ] User profile page — Clerk provides UserButton but no custom profile page
 - [ ] Saved addresses and preferences — per-user settings not yet implemented
 - [ ] Clerk production instance — currently running on dev instance

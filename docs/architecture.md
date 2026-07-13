@@ -25,17 +25,10 @@
 
 **Implemented — Clerk v6 (`@clerk/react`) + custom backend middleware using `@clerk/backend`.**
 
-- **Frontend**: `ClerkProvider` wraps the app in `main.tsx`. Auth controls use the `Show` component:
-  - `<Show when="signed-out">` renders `SignInButton` + `SignUpButton`
-  - `<Show when="signed-in">` renders `UserButton`
-- **Protected checkout**: CartDrawer checks `isSignedIn` prop — shows "Sign In to Checkout" if not authenticated
-- **API calls**: `useAuth().getToken()` fetches a Clerk session JWT, sent as `Authorization: Bearer <token>`
-- **Backend**: Custom `requireAuth` middleware uses `verifyToken(token, { secretKey })` from `@clerk/backend` directly. This was done because `@clerk/express` v2.1.40 had a bug where `req.auth` could be `undefined` instead of always being set. The custom middleware:
-  - Extracts token from `Authorization: Bearer <token>` header
-  - Guards against `null`, `undefined`, and literal `"null"`/`"undefined"` string tokens
-  - Calls `verifyToken(token, { secretKey })` to verify the JWT
-  - Sets `req.auth = { userId: payload.sub }` on success
-  - Returns 401 on failure with clear error message
+- **Frontend**: `ClerkProvider` wraps the app in `main.tsx`. Auth controls use the `Show` component.
+- **API calls**: `useAuth().getToken()` → `Authorization: Bearer <token>`
+- **Backend**: Custom `requireAuth` middleware uses `verifyToken(token, { secretKey })` from `@clerk/backend`.
+- **Role check**: `isAdminUser()` accepts both `'admin'` and `'manager'` roles via Clerk `public_metadata.role`.
 
 ### Environment Variables
 
@@ -58,9 +51,10 @@
 
 | Table | Purpose | Status |
 |-------|---------|--------|
-| `menu_items` | Product catalog (name, category, prices, description, image, modifiers) | Active — 13 seed items |
+| `menu_items` | Product catalog (name, category, prices, description, image) | Active — 13 seed items |
 | `contacts` | Contact form submissions (name, email, message, clerk_user_id) | Active |
-| `orders` | Order records (order_number, clerk_user_id, items JSONB, subtotal, status) | Active — written via API |
+| `orders` | Order records (order_number, clerk_user_id, items JSONB, subtotal, status) | Active — 5 statuses |
+| `addons` | Sauces, drinks, extras (type, name, price, is_active, sort_order) | Active — seeded with defaults |
 
 ### Auto-migration
 
@@ -73,65 +67,52 @@ On server startup, `server.ts` auto-runs `schema.sql` (idempotent `CREATE TABLE 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/api/health` | None | Health check |
-| GET | `/api/menu-items` | None | Returns all products from PostgreSQL |
-| POST | `/api/contact` | None | Saves contact form (optionally linked to Clerk user) |
-| POST | `/api/orders` | Custom `requireAuth` | Creates order record linked to Clerk user |
-| GET | `/api/orders` | Custom `requireAuth` | Returns current user's orders |
-| GET | `/api/orders/admin` | Custom `requireAuth` + admin check | Returns ALL orders (admin only) |
-| PATCH | `/api/orders/:id/status` | Custom `requireAuth` + admin check | Updates order status (admin only) |
-| GET | `/api/admin/check` | Custom `requireAuth` | Checks if current user has admin role |
-
-### Items JSON Serialization
-
-`POST /api/orders` explicitly `JSON.stringify()`s the items array before passing to the PostgreSQL query to avoid edge cases in the `pg` library's JSONB type handler. A try/catch guard provides a `400` response if serialization fails.
+| GET | `/api/menu-items` | None | Returns all products |
+| POST | `/api/menu-items` | Admin/manager | Create product |
+| PUT | `/api/menu-items/:id` | Admin/manager | Update product |
+| DELETE | `/api/menu-items/:id` | Admin/manager | Delete product |
+| POST | `/api/contact` | None | Saves contact form |
+| POST | `/api/orders` | `requireAuth` | Create order |
+| GET | `/api/orders` | `requireAuth` | User's orders |
+| GET | `/api/orders/admin` | Admin/manager | All orders |
+| PATCH | `/api/orders/:id/status` | Admin/manager | Update order status |
+| GET | `/api/admin/check` | `requireAuth` | Check admin/manager role |
+| GET | `/api/users` | Admin/manager | List Clerk users |
+| PATCH | `/api/users/:id/role` | Admin/manager | Update user role |
+| GET | `/api/addons` | None | Active add-ons |
+| GET | `/api/addons/admin` | Admin/manager | All add-ons (incl. inactive) |
+| POST | `/api/addons` | Admin/manager | Create add-on |
+| PUT | `/api/addons/:id` | Admin/manager | Update add-on |
+| DELETE | `/api/addons/:id` | Admin/manager | Delete add-on |
 
 ---
 
 ## Payments
 
-**Not implemented.** The checkout flow generates a random order ID and records it in the database, but no payment processor is called. Future integration with Stripe/Razorpay is needed for real payment processing.
+**Not implemented.** The checkout flow generates a random order ID and records it in the database, but no payment processor is called.
 
 ---
 
 ## Hosting
 
-- The app is configured for **Railway** deployment
+- **Railway** deployment
 - GitHub repo: `github.com/muneebarshad2610-dotcom/SaunceandChese`
-- No AI Studio, Vercel, or Netlify config files
 
 ---
 
 ## App Flow
 
-**Single-page application (SPA) with History API routing.** No client-side routing library. Pages are switched via `window.history.pushState()` in App.tsx.
+**SPA with History API routing.** Pages switched via `window.history.pushState()`.
 
 ```
 Pages:
   /       → Hero + StorySection + InstagramMarquee + LocationsSection + Footer
   /menu   → MenuSection + DealsSection + Footer
   /orders → OrderHistory (requires sign-in)
-  /admin  → AdminOrders (requires admin role)
+  /admin  → AdminDashboard (admin/manager) → tabs: Orders, Products, Users, Add-ons
 
-All pages share via renderShell():
-  ├─ Navbar (with Clerk auth buttons + page navigation)
-  ├─ Footer
-  ├─ QuickViewModal
-  ├─ CartDrawer
-  ├─ CheckoutConfirmModal
-  ├─ CheckoutForm
-  ├─ OrderSuccessModal
+All pages share via renderShell(): Navbar, Footer, QuickViewModal, CartDrawer, CheckoutConfirmModal, CheckoutForm, OrderSuccessModal
 ```
-
-### User journey
-1. User lands on `/` → sees Hero + brand story
-2. Clicks "Sink Your Teeth In" → navigates to `/menu`
-3. Filters items, clicks "Customize" → QuickView modal opens
-4. Customizes cheese pull, sauce, size → adds to cart → cart drawer opens
-5. Reviews items in cart (remove with trash button, quantity shown as label)
-6. If signed out: sees "Sign In to Checkout" button → signs in via Clerk modal
-7. If signed in: clicks "Checkout Now" → confirmation prompt → delivery details form → order submitted → success modal
-8. Cart cleared, order recorded in database
-9. Can view past orders at `/orders`, admins can manage at `/admin`
 
 ---
 
@@ -141,57 +122,30 @@ All pages share via renderShell():
 /
 ├── index.html                  # Entry HTML with SEO/OG tags
 ├── package.json                # Dependencies and scripts
-├── tsconfig.json               # TypeScript config
-├── vite.config.ts              # Vite config — React + Tailwind plugins
 ├── server.ts                   # Express server with custom Clerk auth + PostgreSQL
-├── .env.example                # Template for Clerk + PostgreSQL env vars
-├── .gitignore
-├── Design.Md                   # Design specification
-├── docs/                       # Project documentation
-│   ├── prd.md
-│   ├── architecture.md
-│   ├── phases.md
-│   ├── memory.md
-│   ├── session.md
-│   ├── rules.md
-│   └── info.md
 ├── src/
 │   ├── main.tsx                # App entry — ClerkProvider wraps <App />
-│   ├── App.tsx                 # Orchestrator with page routing + Clerk auth + shared shell
-│   ├── index.css               # Tailwind CSS imports, custom theme, keyframes
-│   ├── env.d.ts                # Vite env variable type declarations
+│   ├── App.tsx                 # Orchestrator with page routing + shared shell
 │   ├── types/
-│   │   └── index.ts            # Shared interfaces (MenuItem, CartItem, etc.)
+│   │   └── index.ts            # Shared interfaces + addon helpers (fetchAddons, clearAddonCache)
 │   ├── hooks/
 │   │   ├── useCart.ts          # Cart state + localStorage persistence
 │   │   └── useMenuItems.ts     # Fetch menu items from API
 │   ├── pages/
-│   │   ├── OrderHistory.tsx        # User's past orders view
-│   │   └── AdminOrders.tsx         # Admin dashboard — view all orders + update status
+│   │   ├── AdminDashboard.tsx   # Tabbed admin (Orders, Products, Users, Add-ons)
+│   │   ├── AdminOrders.tsx      # Order management (view, filter, update status)
+│   │   ├── AdminProducts.tsx    # Product/deal CRUD
+│   │   ├── AdminUsers.tsx       # User list + role management
+│   │   ├── AdminAddons.tsx      # Add-on management (sauces, drinks, extras)
+│   │   └── OrderHistory.tsx     # User's past orders view
 │   ├── components/
-│   │   ├── ErrorBoundary.tsx   # Error boundary with retro fallback UI
-│   │   ├── layout/
-│   │   │   ├── Navbar.tsx      # Sticky nav with page links + Clerk auth + cart badge
-│   │   │   └── Footer.tsx      # Brand footer with location/social
-│   │   ├── sections/
-│   │   │   ├── Hero.tsx         # Brand hero with CTA to /menu
-│   │   │   ├── StorySection.tsx
-│   │   │   ├── MenuSection.tsx  # Filter tabs + skeleton loading
-│   │   │   ├── DealsSection.tsx # Hot deals + skeleton loading
-│   │   │   ├── InstagramMarquee.tsx
-│   │   │   └── LocationsSection.tsx # Address + contact form with error display
-│   │   ├── modals/
-│   │   │   ├── QuickViewModal.tsx   # Product customization (cheese-pull fixed)
-│   │   │   ├── CartDrawer.tsx       # Cart with Clerk auth gate on checkout
-│   │   │   ├── CheckoutConfirmModal.tsx  # Confirmation prompt before delivery form
-│   │   │   ├── CheckoutForm.tsx     # Delivery details form before order submission
-│   │   │   └── OrderSuccessModal.tsx
-│   │   └── ui/
-│   │       ├── MenuCard.tsx
-│   │       ├── DealCard.tsx
-│   │       └── SkeletonCard.tsx
+│   │   ├── ErrorBoundary.tsx
+│   │   ├── layout/  (Navbar, Footer)
+│   │   ├── sections/ (Hero, Story, Menu, Deals, Marquee, Locations)
+│   │   ├── modals/ (QuickView, CartDrawer, CheckoutConfirm, CheckoutForm, OrderSuccess)
+│   │   └── ui/ (MenuCard, DealCard, SkeletonCard)
 │   └── db/
 │       ├── pool.ts             # PostgreSQL connection pool
-│       ├── schema.sql          # Database schema (menu_items, contacts, orders)
-│       └── seed.sql            # 13 seed menu items
+│       ├── schema.sql          # Database schema (4 tables + migrations)
+│       └── seed.sql            # Seed data for menu items + add-ons
 ```

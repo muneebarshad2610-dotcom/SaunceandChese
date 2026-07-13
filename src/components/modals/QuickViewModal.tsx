@@ -1,12 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Plus, Minus, Sparkles, Droplets, Wine } from 'lucide-react';
-import type { MenuItem } from '../../types';
-import {
-  SAUCE_OPTIONS,
-  DRINK_OPTIONS,
-  EXTRA_CHEESE_PRICE,
-} from '../../types';
+import type { MenuItem, AddonItem } from '../../types';
+import { fetchAddons, getSauceOptions, getDrinkOptions, getExtraCheesePrice } from '../../types';
 
 interface Props {
   item: MenuItem | null;
@@ -23,7 +19,14 @@ export default function QuickViewModal({ item, onClose, onAddToCart }: Props) {
   const [extraCheese, setExtraCheese] = useState(false);
   const [sauce, setSauce] = useState('Ketchup');
   const [drink, setDrink] = useState('');
+  const [addons, setAddons] = useState<AddonItem[]>([]);
 
+  // Fetch add-ons from API on mount
+  useEffect(() => {
+    fetchAddons().then(setAddons).catch(() => {});
+  }, []);
+
+  // Reset state when item changes
   useEffect(() => {
     if (!item) return;
     setQty(1);
@@ -33,6 +36,17 @@ export default function QuickViewModal({ item, onClose, onAddToCart }: Props) {
     setDrink('');
   }, [item?.id]);
 
+  const sauceOptions = getSauceOptions(addons);
+  const drinkOptions = getDrinkOptions(addons);
+  const extraCheesePrice = getExtraCheesePrice(addons);
+
+  // Set default sauce from loaded addons
+  useEffect(() => {
+    if (sauceOptions.length > 0 && sauce === 'Ketchup' && !sauceOptions.includes('Ketchup')) {
+      setSauce(sauceOptions[0]);
+    }
+  }, [sauceOptions, sauce]);
+
   const currentItemPrice = item
     ? item.prices
       ? item.prices[selectedSize]
@@ -40,10 +54,10 @@ export default function QuickViewModal({ item, onClose, onAddToCart }: Props) {
     : 0;
 
   const selectedDrinkPrice = drink
-    ? DRINK_OPTIONS.find((d) => d.name === drink)?.price ?? 0
+    ? drinkOptions.find((d) => d.name === drink)?.price ?? 0
     : 0;
 
-  const addonTotal = (extraCheese ? EXTRA_CHEESE_PRICE : 0) + selectedDrinkPrice;
+  const addonTotal = (extraCheese ? extraCheesePrice : 0) + selectedDrinkPrice;
   const lineTotal = (currentItemPrice * qty) + (addonTotal * qty);
 
   const handleAdd = () => {
@@ -156,7 +170,7 @@ export default function QuickViewModal({ item, onClose, onAddToCart }: Props) {
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-black text-[#C41E3A]/60">+ Rs. {EXTRA_CHEESE_PRICE}</span>
+                      <span className="text-xs font-black text-[#C41E3A]/60">+ Rs. {extraCheesePrice}</span>
                       <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
                         extraCheese
                           ? 'bg-[#C41E3A] border-[#C41E3A]'
@@ -175,7 +189,7 @@ export default function QuickViewModal({ item, onClose, onAddToCart }: Props) {
                     Sauce
                   </label>
                   <div className="grid grid-cols-3 gap-2">
-                    {SAUCE_OPTIONS.map((s) => (
+                    {sauceOptions.map((s) => (
                       <button
                         key={s}
                         onClick={() => setSauce(s)}
@@ -198,7 +212,7 @@ export default function QuickViewModal({ item, onClose, onAddToCart }: Props) {
                     Cold Drink <span className="text-[#C41E3A]/30 normal-case text-[8px]">(optional)</span>
                   </label>
                   <div className="grid grid-cols-3 gap-2">
-                    {DRINK_OPTIONS.map((d) => (
+                    {drinkOptions.map((d) => (
                       <button
                         key={d.name}
                         onClick={() => setDrink(drink === d.name ? '' : d.name)}

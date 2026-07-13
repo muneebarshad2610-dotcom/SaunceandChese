@@ -62,6 +62,19 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_address TEXT         NOT NU
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_notes   TEXT         DEFAULT '';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS updated_at       TIMESTAMP    DEFAULT NOW();
 
+-- ─── Add-ons (sauces, drinks, extras) ─────────────────────────────
+
+CREATE TABLE IF NOT EXISTS addons (
+  id         SERIAL PRIMARY KEY,
+  type       VARCHAR(50) NOT NULL CHECK (type IN ('sauce', 'drink', 'extra')),
+  name       VARCHAR(255) NOT NULL,
+  price      NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  is_active  BOOLEAN DEFAULT true,
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
 -- ─── Indexes ────────────────────────────────────────────────────
 
 CREATE INDEX IF NOT EXISTS idx_menu_items_category ON menu_items (category);

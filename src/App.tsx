@@ -15,7 +15,7 @@ import CheckoutConfirmModal from './components/modals/CheckoutConfirmModal';
 import CheckoutForm from './components/modals/CheckoutForm';
 import OrderSuccessModal from './components/modals/OrderSuccessModal';
 import OrderHistory from './pages/OrderHistory';
-import AdminOrders from './pages/AdminOrders';
+import AdminDashboard from './pages/AdminDashboard';
 import { useCart } from './hooks/useCart';
 import { useMenuItems } from './hooks/useMenuItems';
 import type { MenuItem, OrderDetails, CheckoutFormData } from './types';
@@ -280,7 +280,7 @@ export default function App() {
   // ─── Page: Admin ─────────────────────────────────────────
   if (currentPage === 'admin') {
     return renderShell(
-      <AdminOrders onNavigateHome={() => navigate('home')} />
+      <AdminDashboard onNavigateHome={() => navigate('home')} />
     );
   }
 

@@ -187,10 +187,25 @@ const clerkClient = createClerkClient({ secretKey: clerkSecretKey });
 async function isAdminUser(clerkUserId: string): Promise<boolean> {
   try {
     const user = await clerkClient.users.getUser(clerkUserId);
-    return (user.publicMetadata as Record<string, unknown>)?.role === 'admin';
+    const role = (user.publicMetadata as Record<string, unknown>)?.role;
+    return role === 'admin' || role === 'manager';
   } catch {
     return false;
   }
+}
+
+async function requireAdminOrManager(req: any, res: any): Promise<string | null> {
+  const clerkUserId = req.auth?.userId;
+  if (!clerkUserId) {
+    res.status(401).json({ error: 'Authentication required' });
+    return null;
+  }
+  const allowed = await isAdminUser(clerkUserId);
+  if (!allowed) {
+    res.status(403).json({ error: 'Admin or manager role required' });
+    return null;
+  }
+  return clerkUserId;
 }
 
 // ─── Order Routes ─────────────────────────────────────────────────  // POST /api/orders — submit order (requires authentication)
@@ -382,6 +397,326 @@ app.get('/api/admin/check', requireAuth, async (req, res) => {
   }
 });
 
+// ─── Menu Items CRUD (admin/manager only) ──────────────────────────
+
+// POST /api/menu-items — Create a new menu item
+app.post('/api/menu-items', requireAuth, async (req, res) => {
+  try {
+    const adminUser = await requireAdminOrManager(req, res);
+    if (!adminUser) return;
+
+    const { name, category, price, price_small, price_regular, price_large, description, image, base_cheese, base_sauce } = req.body;
+
+    if (!name || typeof name !== 'string' || name.trim().length < 1) {
+      res.status(400).json({ error: 'Name is required' });
+      return;
+    }
+    if (!['classic', 'special', 'deal'].includes(category)) {
+      res.status(400).json({ error: 'Category must be classic, special, or deal' });
+      return;
+    }
+    if (!description || typeof description !== 'string') {
+      res.status(400).json({ error: 'Description is required' });
+      return;
+    }
+    if (!image || typeof image !== 'string') {
+      res.status(400).json({ error: 'Image URL is required' });
+      return;
+    }
+
+    const basePrice = price_small || price_regular || price_large ? 0 : (parseFloat(price) || 0);
+
+    const { rows } = await pool.query(
+      `INSERT INTO menu_items (name, category, price, price_small, price_regular, price_large, description, image, base_cheese, base_sauce)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING id, name, category, created_at`,
+      [
+        name.trim(),
+        category,
+        basePrice,
+        price_small ? parseFloat(price_small) : null,
+        price_regular ? parseFloat(price_regular) : null,
+        price_large ? parseFloat(price_large) : null,
+        description.trim(),
+        image.trim(),
+        base_cheese ? parseInt(base_cheese, 10) : 4,
+        base_sauce || 'Liquid Gold',
+      ]
+    );
+
+    console.log(`📦 Menu item created: ${rows[0].name} (${category})`);
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error('POST /api/menu-items error:', err);
+    res.status(500).json({ error: 'Failed to create menu item' });
+  }
+});
+
+// PUT /api/menu-items/:id — Update a menu item
+app.put('/api/menu-items/:id', requireAuth, async (req, res) => {
+  try {
+    const adminUser = await requireAdminOrManager(req, res);
+    if (!adminUser) return;
+
+    const itemId = parseInt(req.params.id, 10);
+    if (isNaN(itemId)) {
+      res.status(400).json({ error: 'Invalid item ID' });
+      return;
+    }
+
+    const { name, category, price, price_small, price_regular, price_large, description, image, base_cheese, base_sauce } = req.body;
+
+    const { rows } = await pool.query(
+      `UPDATE menu_items
+       SET name = $1, category = $2, price = $3, price_small = $4, price_regular = $5, price_large = $6,
+           description = $7, image = $8, base_cheese = $9, base_sauce = $10, updated_at = NOW()
+       WHERE id = $11
+       RETURNING id, name, category, updated_at`,
+      [
+        name.trim(),
+        category,
+        price ? parseFloat(price) : 0,
+        price_small ? parseFloat(price_small) : null,
+        price_regular ? parseFloat(price_regular) : null,
+        price_large ? parseFloat(price_large) : null,
+        description.trim(),
+        image.trim(),
+        base_cheese ? parseInt(base_cheese, 10) : 4,
+        base_sauce || 'Liquid Gold',
+        itemId,
+      ]
+    );
+
+    if (rows.length === 0) {
+      res.status(404).json({ error: 'Menu item not found' });
+      return;
+    }
+
+    console.log(`📦 Menu item updated: ${rows[0].name}`);
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('PUT /api/menu-items/:id error:', err);
+    res.status(500).json({ error: 'Failed to update menu item' });
+  }
+});
+
+// DELETE /api/menu-items/:id — Delete a menu item
+app.delete('/api/menu-items/:id', requireAuth, async (req, res) => {
+  try {
+    const adminUser = await requireAdminOrManager(req, res);
+    if (!adminUser) return;
+
+    const itemId = parseInt(req.params.id, 10);
+    if (isNaN(itemId)) {
+      res.status(400).json({ error: 'Invalid item ID' });
+      return;
+    }
+
+    const { rows } = await pool.query(
+      'DELETE FROM menu_items WHERE id = $1 RETURNING id, name',
+      [itemId]
+    );
+
+    if (rows.length === 0) {
+      res.status(404).json({ error: 'Menu item not found' });
+      return;
+    }
+
+    console.log(`🗑️ Menu item deleted: ${rows[0].name}`);
+    res.json({ success: true, deleted: rows[0] });
+  } catch (err) {
+    console.error('DELETE /api/menu-items/:id error:', err);
+    res.status(500).json({ error: 'Failed to delete menu item' });
+  }
+});
+
+// ─── User Management (admin/manager only) ─────────────────────────
+
+// GET /api/users — List Clerk users
+app.get('/api/users', requireAuth, async (req, res) => {
+  try {
+    const adminUser = await requireAdminOrManager(req, res);
+    if (!adminUser) return;
+
+    const { data } = await clerkClient.users.getUserList({ limit: 100 });
+
+    const users = data.map((u: any) => ({
+      id: u.id,
+      username: u.username,
+      firstName: u.firstName,
+      lastName: u.lastName,
+      email: u.emailAddresses?.[0]?.emailAddress || '',
+      imageUrl: u.imageUrl,
+      role: (u.publicMetadata as Record<string, unknown>)?.role || 'user',
+      lastSignInAt: u.lastSignInAt,
+      createdAt: u.createdAt,
+    }));
+
+    res.json(users);
+  } catch (err) {
+    console.error('GET /api/users error:', err);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// PATCH /api/users/:id/role — Update a user's role
+app.patch('/api/users/:id/role', requireAuth, async (req, res) => {
+  try {
+    const adminUser = await requireAdminOrManager(req, res);
+    if (!adminUser) return;
+
+    const targetUserId = req.params.id;
+    const { role } = req.body;
+
+    if (!role || !['user', 'admin', 'manager'].includes(role)) {
+      res.status(400).json({ error: 'Role must be user, admin, or manager' });
+      return;
+    }
+
+    const updatedUser = await clerkClient.users.updateUser(targetUserId, {
+      publicMetadata: { role },
+    });
+
+    console.log(`👤 User ${targetUserId} role set to ${role}`);
+    res.json({ success: true, userId: targetUserId, role });
+  } catch (err) {
+    console.error('PATCH /api/users/:id/role error:', err);
+    res.status(500).json({ error: 'Failed to update user role' });
+  }
+});
+
+// ─── Add-ons API ────────────────────────────────────────────────
+
+// GET /api/addons — public, returns all active add-ons
+app.get('/api/addons', async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, type, name, price, is_active AS "isActive", sort_order AS "sortOrder"
+       FROM addons
+       WHERE is_active = true
+       ORDER BY type, sort_order`
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('GET /api/addons error:', err);
+    res.status(500).json({ error: 'Failed to fetch add-ons' });
+  }
+});
+
+// GET /api/addons/admin — all add-ons including inactive (admin/manager only)
+app.get('/api/addons/admin', requireAuth, async (req, res) => {
+  try {
+    const adminUser = await requireAdminOrManager(req, res);
+    if (!adminUser) return;
+
+    const { rows } = await pool.query(
+      `SELECT id, type, name, price, is_active AS "isActive", sort_order AS "sortOrder"
+       FROM addons
+       ORDER BY type, sort_order`
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('GET /api/addons/admin error:', err);
+    res.status(500).json({ error: 'Failed to fetch add-ons' });
+  }
+});
+
+// POST /api/addons — create add-on (admin/manager only)
+app.post('/api/addons', requireAuth, async (req, res) => {
+  try {
+    const adminUser = await requireAdminOrManager(req, res);
+    if (!adminUser) return;
+
+    const { type, name, price, sort_order } = req.body;
+    if (!type || !['sauce', 'drink', 'extra'].includes(type)) {
+      res.status(400).json({ error: 'Type must be sauce, drink, or extra' });
+      return;
+    }
+    if (!name || typeof name !== 'string' || name.trim().length < 1) {
+      res.status(400).json({ error: 'Name is required' });
+      return;
+    }
+
+    const { rows } = await pool.query(
+      `INSERT INTO addons (type, name, price, sort_order)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, type, name, price, is_active AS "isActive", sort_order AS "sortOrder"`,
+      [type, name.trim(), parseFloat(price) || 0, sort_order || 0]
+    );
+
+    console.log(`➕ Add-on created: ${rows[0].name} (${type})`);
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error('POST /api/addons error:', err);
+    res.status(500).json({ error: 'Failed to create add-on' });
+  }
+});
+
+// PUT /api/addons/:id — update add-on (admin/manager only)
+app.put('/api/addons/:id', requireAuth, async (req, res) => {
+  try {
+    const adminUser = await requireAdminOrManager(req, res);
+    if (!adminUser) return;
+
+    const addonId = parseInt(req.params.id, 10);
+    if (isNaN(addonId)) {
+      res.status(400).json({ error: 'Invalid add-on ID' });
+      return;
+    }
+
+    const { type, name, price, is_active, sort_order } = req.body;
+
+    const { rows } = await pool.query(
+      `UPDATE addons
+       SET type = $1, name = $2, price = $3, is_active = $4, sort_order = $5, updated_at = NOW()
+       WHERE id = $6
+       RETURNING id, type, name, price, is_active AS "isActive", sort_order AS "sortOrder"`,
+      [type, name.trim(), parseFloat(price) || 0, is_active, sort_order || 0, addonId]
+    );
+
+    if (rows.length === 0) {
+      res.status(404).json({ error: 'Add-on not found' });
+      return;
+    }
+
+    console.log(`✏️ Add-on updated: ${rows[0].name}`);
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('PUT /api/addons/:id error:', err);
+    res.status(500).json({ error: 'Failed to update add-on' });
+  }
+});
+
+// DELETE /api/addons/:id — delete add-on (admin/manager only)
+app.delete('/api/addons/:id', requireAuth, async (req, res) => {
+  try {
+    const adminUser = await requireAdminOrManager(req, res);
+    if (!adminUser) return;
+
+    const addonId = parseInt(req.params.id, 10);
+    if (isNaN(addonId)) {
+      res.status(400).json({ error: 'Invalid add-on ID' });
+      return;
+    }
+
+    const { rows } = await pool.query(
+      'DELETE FROM addons WHERE id = $1 RETURNING id, name',
+      [addonId]
+    );
+
+    if (rows.length === 0) {
+      res.status(404).json({ error: 'Add-on not found' });
+      return;
+    }
+
+    console.log(`🗑️ Add-on deleted: ${rows[0].name}`);
+    res.json({ success: true, deleted: rows[0] });
+  } catch (err) {
+    console.error('DELETE /api/addons/:id error:', err);
+    res.status(500).json({ error: 'Failed to delete add-on' });
+  }
+});
+
 // Health check
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -407,7 +742,17 @@ async function start() {
     console.log(`   GET  /api/orders             (auth)`);
     console.log(`   GET  /api/orders/admin       (admin)`);
     console.log(`   PATCH /api/orders/:id/status (admin)`);
-    console.log(`   GET  /api/admin/check\n`);
+    console.log(`   GET  /api/admin/check`);
+    console.log(`   POST /api/menu-items        (admin)`);
+    console.log(`   PUT  /api/menu-items/:id    (admin)`);
+    console.log(`   DEL  /api/menu-items/:id    (admin)`);
+    console.log(`   GET  /api/users             (admin)`);
+    console.log(`   PATCH /api/users/:id/role   (admin)`);
+    console.log(`   GET  /api/addons             (public)`);
+    console.log(`   GET  /api/addons/admin       (admin)`);
+    console.log(`   POST /api/addons             (admin)`);
+    console.log(`   PUT  /api/addons/:id         (admin)`);
+    console.log(`   DEL  /api/addons/:id         (admin)\n`);
   });
 
   const shutdown = async () => {
