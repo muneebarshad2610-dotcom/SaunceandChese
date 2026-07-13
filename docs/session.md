@@ -204,3 +204,9 @@
 - **Order type**: Added `confirmedAt`, `preparingAt`, `outForDeliveryAt`, `deliveredAt` optional fields.
 - **OrderHistory**: Each status step in the timeline now shows the timestamp (HH:MM) beneath the label.
 - **Files touched**: src/db/schema.sql, server.ts, src/types/index.ts, src/pages/OrderHistory.tsx, docs/session.md
+
+## Session 22 — [2026-07-14] — Responsiveness review + final polish
+
+- Verified hamburger menu responsive: `md:hidden` toggle, `hidden md:flex` desktop nav, right-slide drawer at `top-[72px]`, `w-72` fits small phone screens, backdrop overlay, scroll lock, aria-labels, auth buttons included, closes on navigation.
+- TypeScript clean across all files.
+- **Files touched**: docs/session.md
