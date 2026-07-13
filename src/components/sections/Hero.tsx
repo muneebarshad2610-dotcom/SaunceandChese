@@ -51,13 +51,13 @@ export default function Hero({ onNavigateMenu }: HeroProps) {
           className="relative"
         >
           <img
-            src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600&auto=format&fit=crop"
-            alt="Smash Cheesy Burger with Cheese Pull"
+            src="https://images.unsplash.com/photo-1590947132387-155cc02f3212?q=80&w=600&auto=format&fit=crop"
+            alt="Cheesy Pizza with Cheese Pull"
             className="w-full max-w-[420px] md:max-w-[480px] h-[450px] md:h-[520px] object-cover rounded-[60px] md:rounded-[80px] border-8 border-white retro-shadow"
             referrerPolicy="no-referrer"
           />
           <div className="absolute -bottom-4 -left-4 bg-[#FFB81C] text-[#C41E3A] px-5 py-3 rounded-2xl font-retro text-2xl md:text-3xl uppercase border-4 border-[#C41E3A] rotate-6 shadow-md">
-            100% Smashed Wagyu
+            Freshly Pulled Cheese
           </div>
         </motion.div>
       </div>
