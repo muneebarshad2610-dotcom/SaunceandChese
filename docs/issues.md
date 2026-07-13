@@ -2,22 +2,7 @@
 
 ## 🔴 Critical
 
-### 1. Payment "Success" Shown Before Order Is Created
-- **Files**: `src/components/modals/PaymentModal.tsx:70-76`, `src/App.tsx:180-235`
-- **Problem**: PaymentModal shows a success animation and fires `onSuccess()` *before* the POST to `/api/orders`. If the API call fails (network, validation, server error), the user sees "Payment Successful!" followed by an `alert()` saying "Failed to place order." The success UI is irreversible.
-- **Fix**: Create the order on the server first, then show payment success only after both the payment and order creation succeed.
-
-### 2. Order Creation Uses Client-Generated ID, Ignores Server Response
-- **File**: `src/App.tsx:194-233`
-- **Problem**: The `POST /api/orders` response (which contains the real DB `id`) is never read. `lastOrderDetails` uses a local `SNC-`+random string. The confirmation screen shows a made-up ID unrelated to the actual DB record.
-- **Fix**: Read `res.json()` and use the server's returned ID.
-
-### 3. Stale Closure in `handlePaymentSuccess`
-- **File**: `src/App.tsx:200-208`
-- **Problem**: The callback captures `cart`, `cartSubtotal`, and `cartItemCount` at render time. If the cart changes between starting checkout and payment completing, stale data is submitted.
-- **Fix**: Use a ref to snapshot cart state when checkout begins, or read from the pending order ref.
-
-### 4. No `strict: true` in tsconfig
+### 1. No `strict: true` in tsconfig
 - **File**: `tsconfig.json`
 - **Problem**: Missing `strict`, `noImplicitAny`, `strictNullChecks`, `noUnusedLocals`, `noUnusedParameters`. Allows `any` types and null/undefined bugs to pass compilation.
 - **Fix**: Enable strict mode and fix resulting type errors.
@@ -26,54 +11,31 @@
 
 ## 🟠 High
 
-### 5. Widespread `any` Types (20+ occurrences)
+### 2. Widespread `any` Types (20+ occurrences)
 - **Files**: `server.ts:44,54,122,222,236,626`, `AdminOrders.tsx:12,172,174,499,517`, `OrderHistory.tsx:302,322`, etc.
 - **Fix**: Replace `any` with proper types (`Request`, `Response`, `CartItem[]`, etc.).
 
-### 6. `alert()` Used for Error Feedback (12 occurrences)
-- **Files**: `App.tsx:219`, `AdminAddons.tsx:90,132`, `AdminOrders.tsx:113,132,140`, `AdminProducts.tsx:142,189`, `AdminTables.tsx:67,103`, `AdminUsers.tsx:79`, `TableOrder.tsx:170`
-- **Fix**: Replace with a toast/notification component.
+### 3. No `aria-label` on Some Icon-Only Buttons
+- **Fix**: Remaining icon-only buttons need `aria-label`.
 
-### 7. No `aria-label` on Icon-Only Buttons
-- **Files**: Navbar (cart toggle, mobile nav), CartDrawer (close, remove), QuickViewModal (close), CheckoutForm (close), etc.
-- **Fix**: Add `aria-label` attributes to all icon-only `<button>` elements.
-
-### 8. Duplicate `API_BASE` Declarations (14 files)
-- **Files**: `App.tsx:30`, `useMenuItems.ts:4`, `types/index.ts:136`, all admin pages, etc.
-- **Fix**: Export from a single constants file.
-
-### 9. `express.json()` Body Limit Too Small (10KB)
-- **File**: `server.ts:38`
-- **Problem**: Complex orders with many items + addons + variants may exceed 10KB and fail silently with 413.
-- **Fix**: Increase to `1mb` or remove limit.
-
-### 10. Hardcoded CSS Colors Not Using Theme Tokens
+### 4. Hardcoded CSS Colors Not Using Theme Tokens
 - **Files**: All `.tsx` files — `bg-[#C41E3A]`, `text-[#FFB81C]`, etc. used hundreds of times.
 - **Fix**: Define color tokens in tailwind config and reference by name.
 
-### 11. JSON Parse Fallback Silently Swallows Errors
+### 5. JSON Parse Fallback Silently Swallows Errors
 - **Files**: `App.tsx:212,250`, `AdminProducts.tsx:181`, `AdminTables.tsx:97`, `AdminAddons.tsx:124`, `TableOrder.tsx:158`
 - **Pattern**: `await res.json().catch(() => ({}))` — returns `{}` on invalid JSON, then `.error` is `undefined`, masking real server errors.
 - **Fix**: Check `Content-Type` or let JSON parse throw and handle in catch.
 
-### 12. ErrorBoundary Uses `(this as any)` to Access State and Props
-- **File**: `src/components/ErrorBoundary.tsx:17,29-30`
-- **Fix**: Use proper class property declarations.
-
-### 13. KitchenView Web Audio Context Created Without User Gesture
+### 6. KitchenView Web Audio Context Created Without User Gesture
 - **File**: `src/pages/KitchenView.tsx:51-61`
 - **Problem**: `new AudioContext()` in `useEffect` — modern browsers block it without user interaction.
 - **Fix**: Create on first user click/tap, or use a resume-on-interaction pattern.
 
-### 14. No Pagination on Orders / Users API
+### 7. No Pagination on Orders / Users API
 - **File**: `server.ts:331-353,356-382,619-643`
 - **Problem**: Returns all orders/users with no limit. Will become slow as DB grows.
 - **Fix**: Add `LIMIT`/`OFFSET` with page query params.
-
-### 15. Footer Links Cause Full Page Reload
-- **File**: `src/components/layout/Footer.tsx:62-67`
-- **Problem**: `<a href="/terms">` triggers browser navigation, losing React state (cart, auth).
-- **Fix**: Use `<button onClick={() => navigate('terms')}>`.
 
 ---
 
@@ -152,3 +114,15 @@
 - Table orders not showing table info in admin. Fixed by including `table_id`, `guest_name`, `split_bill` in admin order query.
 - Hero cheese pull image broken. Fixed with working pizza cheese pull URL.
 - Instagram Marquee images returning 404. Fixed all 6 with verified Unsplash URLs.
+- Payment success shown before order creation — fixed. Order is created on server first, then success is shown.
+- Order ID from server ignored — fixed. `res.json()` is now read and the server ID is used.
+- Stale closure in handlePaymentSuccess — fixed. Cart state is snapshotted via ref at checkout start.
+- `alert()` used for error feedback (12 occurrences) — replaced with toast notification system.
+- No `aria-label` on Navbar icon buttons — fixed. Added to cart toggle, hamburger, close buttons.
+- Duplicate `API_BASE` in 14 files — fixed. Single source in `src/lib/constants.ts`.
+- `express.json()` body limit 10KB — fixed. Increased to 1MB.
+- ErrorBoundary `(this as any)` access — fixed. Proper class property declarations.
+- Footer links cause full page reload — fixed. Uses `onNavigate` callback instead of `<a href>`.
+- No scroll lock when modals open — fixed. `useScrollLock` hook applied to all modals.
+- Empty `scripts/` directory — removed.
+- `Design.Md` uses `.Md` — renamed to `design.md`.

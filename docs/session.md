@@ -185,3 +185,10 @@
 - **One-click reorder**: "Reorder All" button in expanded order view. Past order items merged into existing cart via localStorage + custom `reorder-cart` event. User redirected to menu with cart open.
 - **Types**: Added `estimatedDeliveryAt` to `Order` and `OrderDetails`.
 - **Files touched**: server.ts, src/types/index.ts, src/App.tsx, src/pages/OrderHistory.tsx, src/components/modals/OrderSuccessModal.tsx, src/hooks/useCart.ts, docs/
+
+## Session 19 — [2026-07-14] — Cart persistence indicator + docs cleanup
+
+- **Cart persistence indicator**: Small green dot + "Cart saved — come back anytime" badge in CartDrawer footer.
+- **Reorder sync**: Custom `reorder-cart` event lets useCart re-read localStorage when reorder happens from App.
+- **Docs**: Updated issues.md (moved fixed items to historical, renumbered open issues). Updated session.md.
+- **Files touched**: src/components/modals/CartDrawer.tsx, src/hooks/useCart.ts, src/App.tsx, docs/issues.md, docs/session.md

@@ -173,6 +173,13 @@ export default function CartDrawer({
                     Empty Basket
                   </button>
                 )}
+
+                {cart.length > 0 && (
+                  <div className="flex items-center justify-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-[#C41E3A]/30">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                    Cart saved — come back anytime
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>
