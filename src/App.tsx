@@ -227,6 +227,7 @@ export default function App() {
           id: serverId,
           total: Number(subtotal),
           itemsCount: snapshot.itemCount,
+          estimatedDeliveryAt: created?.estimatedDeliveryAt || null,
         });
         setShowPaymentModal(false);
         setShowOrderSuccess(true);
@@ -333,16 +334,56 @@ export default function App() {
           isOpen={showOrderSuccess}
           orderDetails={lastOrderDetails}
           onClose={() => setShowOrderSuccess(false)}
+          estimatedDeliveryAt={lastOrderDetails?.estimatedDeliveryAt}
         />
       </div>
     </ToastProvider>
     </ErrorBoundary>
   );
 
+  // Reorder callback — add past order items back to cart
+  const handleReorder = useCallback(
+    (items: any[]) => {
+      const parsed = items.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        unitPrice: item.unitPrice ?? item.price ?? 0,
+        qty: item.qty,
+        selectedSize: item.selectedSize,
+        selectedVariants: item.selectedVariants,
+        image: item.image,
+        addons: item.addons ?? [],
+      }));
+      // Merge into existing cart via localStorage to avoid hook dependency cycle
+      try {
+        const existing = JSON.parse(localStorage.getItem('snc_cart') || '[]');
+        for (const ci of parsed) {
+          const idx = existing.findIndex(
+            (c: any) =>
+              c.id === ci.id &&
+              c.selectedSize === ci.selectedSize &&
+              JSON.stringify(c.selectedVariants) === JSON.stringify(ci.selectedVariants) &&
+              JSON.stringify(c.addons) === JSON.stringify(ci.addons)
+          );
+          if (idx > -1) {
+            existing[idx].qty += ci.qty;
+          } else {
+            existing.push(ci);
+          }
+        }
+        localStorage.setItem('snc_cart', JSON.stringify(existing));
+        window.dispatchEvent(new CustomEvent('reorder-cart'));
+      } catch { /* ignore */ }
+      navigate('menu');
+      setIsCartOpen(true);
+    },
+    [navigate]
+  );
+
   // ─── Page: Orders ────────────────────────────────────────
   if (currentPage === 'orders') {
     return renderShell(
-      <OrderHistory onNavigateHome={() => navigate('home')} />
+      <OrderHistory onNavigateHome={() => navigate('home')} onReorder={handleReorder} />
     );
   }
 

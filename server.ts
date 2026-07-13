@@ -247,6 +247,14 @@ async function requireKitchen(req: any, res: any): Promise<string | null> {
   return clerkUserId;
 }
 
+// ─── ETA helper ────────────────────────────────────────────────
+function calculateETA(createdAt: string, queueAhead: number): string {
+  const base = 20; // minutes
+  const perQueue = 15; // minutes per order ahead
+  const total = base + queueAhead * perQueue;
+  return new Date(new Date(createdAt).getTime() + total * 60000).toISOString();
+}
+
 // ─── Order Routes ─────────────────────────────────────────────────  // POST /api/orders — submit order (requires authentication)
   app.post('/api/orders', requireAuth, async (req, res) => {
     try {
@@ -313,12 +321,21 @@ async function requireKitchen(req: any, res: any): Promise<string | null> {
       ]
     );
 
+    // Count queue ahead (confirmed + preparing orders before this one)
+    const queueRes = await pool.query(
+      `SELECT COUNT(*) AS cnt FROM orders WHERE status IN ('confirmed', 'preparing') AND created_at < $1`,
+      [rows[0].created_at]
+    );
+    const queueAhead = parseInt((queueRes.rows[0] as any)?.cnt || '0', 10);
+    const estimatedDeliveryAt = calculateETA(rows[0].created_at, queueAhead);
+
     console.log(`📦 Order #${rows[0].order_number} confirmed (user=${clerkUserId})`);
     res.status(201).json({
       success: true,
       id: rows[0].id,
       orderNumber: rows[0].order_number,
       createdAt: rows[0].created_at,
+      estimatedDeliveryAt,
     });
   } catch (err) {
     console.error('POST /api/orders error:', err);
@@ -345,7 +362,25 @@ app.get('/api/orders', requireAuth, async (req, res) => {
       [clerkUserId]
     );
 
-    res.json(rows);
+    // Add ETA for each active order
+    const activeCounts: Record<string, number> = {};
+    for (const row of rows) {
+      if (row.status === 'confirmed' || row.status === 'preparing') {
+        const key = (row as any).createdAt;
+        activeCounts[key] = (activeCounts[key] || 0) + 1;
+      }
+    }
+    let queueIdx = 0;
+    const result = rows.map((row: any) => {
+      let estimatedDeliveryAt: string | null = null;
+      if (row.status === 'confirmed' || row.status === 'preparing') {
+        estimatedDeliveryAt = calculateETA(row.createdAt, queueIdx);
+        queueIdx++;
+      }
+      return { ...row, estimatedDeliveryAt };
+    });
+
+    res.json(result);
   } catch (err) {
     console.error('GET /api/orders error:', err);
     res.status(500).json({ error: 'Failed to fetch orders' });
@@ -374,7 +409,17 @@ app.get('/api/orders/admin', requireAuth, async (req, res) => {
        ORDER BY created_at DESC`
     );
 
-    res.json(rows);
+    let queueIdx = 0;
+    const result = rows.map((row: any) => {
+      let estimatedDeliveryAt: string | null = null;
+      if (row.status === 'confirmed' || row.status === 'preparing') {
+        estimatedDeliveryAt = calculateETA(row.createdAt, queueIdx);
+        queueIdx++;
+      }
+      return { ...row, estimatedDeliveryAt };
+    });
+
+    res.json(result);
   } catch (err) {
     console.error('GET /api/orders/admin error:', err);
     res.status(500).json({ error: 'Failed to fetch all orders' });

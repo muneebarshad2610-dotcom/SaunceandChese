@@ -64,6 +64,23 @@ export function useCart() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
   }, [cart]);
 
+  // Sync cart when reorder writes to localStorage from another component
+  useEffect(() => {
+    const handler = () => {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setCart(parsed.map(migrateCartItem));
+          }
+        }
+      } catch { /* ignore */ }
+    };
+    window.addEventListener('reorder-cart', handler);
+    return () => window.removeEventListener('reorder-cart', handler);
+  }, []);
+
   const cartItemCount = useMemo(
     () => cart.reduce((acc, curr) => acc + curr.qty, 0),
     [cart]

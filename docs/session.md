@@ -162,3 +162,26 @@
 - **Schema migrations**: `ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS product_category VARCHAR(100)`, `ADD COLUMN IF NOT EXISTS variants JSONB`.
 - **New types**: `ProductVariant`, `ProductVariantOption`, `selectedVariants` on `CartItem`/`AddToCartOptions`.
 - **Files touched**: src/db/schema.sql, src/types/index.ts, server.ts, src/pages/AdminProducts.tsx, src/components/sections/MenuSection.tsx, src/components/modals/QuickViewModal.tsx, src/hooks/useCart.ts, src/components/modals/CartDrawer.tsx, src/pages/AdminOrders.tsx, src/pages/KitchenView.tsx, src/pages/OrderHistory.tsx, src/pages/TableOrder.tsx, docs/
+
+## Session 17 — [2026-07-14] — Bug fixes + toast notifications + mobile hamburger menu
+
+- **Toast notification system**: Replaced all `alert()` calls with branded toast component (ToastProvider + useToast hook). Auto-dismiss after 4s.
+- **Modal scroll lock**: Created `useScrollLock` hook, applied to QuickViewModal, CheckoutForm, PaymentModal, Navbar mobile drawer.
+- **ErrorBoundary**: Cleaned up TypeScript, removed `(this as any)` access pattern.
+- **Footer**: Terms/Privacy links now use `onNavigate` instead of `<a href>` — no more full page reloads.
+- **Navbar**: Added hamburger menu for mobile with slide-in drawer. Added `aria-label` to all icon-only buttons. Mobile menu includes all nav links + auth buttons.
+- **Payment flow**: Order now uses server response ID instead of client-generated. Snapshots cart state via ref to avoid stale closures.
+- **Constants**: Extracted `API_BASE`, `PHONE`, `ADDRESS`, `PRODUCT_CATEGORY_SUGGESTIONS` to `src/lib/constants.ts`.
+- **Body limit**: Express JSON body limit increased from 10KB to 1MB.
+- **Gitignore**: Cleaned up duplicates, added `scripts/` pattern.
+- **Cleanup**: Removed empty `scripts/` directory, renamed `Design.Md` → `design.md`.
+- **Files touched**: src/lib/toast.tsx, src/hooks/useScrollLock.ts, src/lib/constants.ts, src/components/ErrorBoundary.tsx, src/components/layout/Footer.tsx, src/components/layout/Navbar.tsx, src/components/modals/QuickViewModal.tsx, src/components/modals/CheckoutForm.tsx, src/components/modals/PaymentModal.tsx, src/App.tsx, server.ts, .gitignore, docs/
+
+## Session 18 — [2026-07-14] — Order UX: ETA, status timeline, one-click reorder
+
+- **ETA calculation**: Server-side `calculateETA()` — base 20 min + 15 min per order ahead in queue. POST /api/orders returns `estimatedDeliveryAt`. GET /api/orders and admin includes it for active orders.
+- **OrderSuccessModal**: Shows estimated delivery time on the receipt panel.
+- **OrderHistory enhanced timeline**: Replaced thin progress bar with numbered step circles (1-4), color-coded (active=red, current=yellow pulse, future=gray). Shows ETA badge for active orders.
+- **One-click reorder**: "Reorder All" button in expanded order view. Past order items merged into existing cart via localStorage + custom `reorder-cart` event. User redirected to menu with cart open.
+- **Types**: Added `estimatedDeliveryAt` to `Order` and `OrderDetails`.
+- **Files touched**: server.ts, src/types/index.ts, src/App.tsx, src/pages/OrderHistory.tsx, src/components/modals/OrderSuccessModal.tsx, src/hooks/useCart.ts, docs/

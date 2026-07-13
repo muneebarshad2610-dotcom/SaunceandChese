@@ -13,9 +13,10 @@ interface Props {
   isOpen: boolean;
   orderDetails: OrderDetails | null;
   onClose: () => void;
+  estimatedDeliveryAt?: string | null;
 }
 
-export default function OrderSuccessModal({ isOpen, orderDetails, onClose }: Props) {
+export default function OrderSuccessModal({ isOpen, orderDetails, onClose, estimatedDeliveryAt }: Props) {
   return (
     <AnimatePresence>
       {isOpen && orderDetails && (
@@ -55,25 +56,33 @@ export default function OrderSuccessModal({ isOpen, orderDetails, onClose }: Pro
               <p className="font-handwritten text-2xl text-[#FFB81C]">Keep staying gooey, Karachi!</p>
             </div>
 
-            <div className="bg-white border-2 border-[#C41E3A] rounded-2xl p-4 text-left space-y-3 font-mono text-xs text-[#C41E3A]/90 shadow-sm relative">
-              <div className="absolute top-2 right-2 font-black bg-[#FFB81C]/15 px-2 py-0.5 rounded text-[10px] uppercase">PAID</div>
-              <div className="flex justify-between border-b border-dashed border-[#C41E3A]/20 pb-2">
-                <span>ORDER NUMBER:</span>
-                <span className="font-bold text-[#1A1A1A]">{orderDetails.id}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>CRITICAL ITEMS:</span>
-                <span className="font-bold text-[#1A1A1A]">{orderDetails.itemsCount} portion(s)</span>
-              </div>
-              <div className="flex justify-between">
-                <span>LOCATION SOURCE:</span>
-                <span className="font-bold text-[#1A1A1A]">KAECHS Block 5 Karachi</span>
-              </div>
-              <div className="flex justify-between border-t border-[#C41E3A]/10 pt-2 text-sm font-black">
-                <span>TOTAL PAID:</span>
-                <span className="text-[#C41E3A]">Rs. {orderDetails.total}</span>
-              </div>
+          <div className="bg-white border-2 border-[#C41E3A] rounded-2xl p-4 text-left space-y-3 font-mono text-xs text-[#C41E3A]/90 shadow-sm relative">
+            <div className="absolute top-2 right-2 font-black bg-[#FFB81C]/15 px-2 py-0.5 rounded text-[10px] uppercase">PAID</div>
+            <div className="flex justify-between border-b border-dashed border-[#C41E3A]/20 pb-2">
+              <span>ORDER NUMBER:</span>
+              <span className="font-bold text-[#1A1A1A]">{orderDetails.id}</span>
             </div>
+            <div className="flex justify-between">
+              <span>CRITICAL ITEMS:</span>
+              <span className="font-bold text-[#1A1A1A]">{orderDetails.itemsCount} portion(s)</span>
+            </div>
+            <div className="flex justify-between">
+              <span>LOCATION SOURCE:</span>
+              <span className="font-bold text-[#1A1A1A]">KAECHS Block 5 Karachi</span>
+            </div>
+            {estimatedDeliveryAt && (
+              <div className="flex justify-between">
+                <span>EST. DELIVERY:</span>
+                <span className="font-bold text-[#FFB81C]">
+                  {new Date(estimatedDeliveryAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between border-t border-[#C41E3A]/10 pt-2 text-sm font-black">
+              <span>TOTAL PAID:</span>
+              <span className="text-[#C41E3A]">Rs. {orderDetails.total}</span>
+            </div>
+          </div>
 
             <div className="border-t-2 border-dashed border-[#C41E3A]/20 pt-4 space-y-4">
               <div className="flex justify-between items-center text-xs font-black uppercase text-[#C41E3A]/50">

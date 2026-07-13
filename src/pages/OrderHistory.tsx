@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Package, Clock, ChevronDown, ChevronUp, MapPin, Phone, User } from 'lucide-react';
+import { Package, Clock, ChevronDown, ChevronUp, MapPin, Phone, User, RefreshCw } from 'lucide-react';
 import { useAuth } from '@clerk/react';
 import type { Order } from '../types';
-
-const API_BASE = import.meta.env.VITE_API_URL ?? '';
+import { API_BASE } from '../lib/constants';
+import { useToast } from '../lib/toast';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   confirmed: { label: 'Confirmed', color: 'text-blue-600', bg: 'bg-blue-100' },
@@ -18,10 +18,12 @@ const STATUS_ORDER = ['confirmed', 'preparing', 'out_for_delivery', 'delivered']
 
 interface Props {
   onNavigateHome: () => void;
+  onReorder?: (items: any[]) => void;
 }
 
-export default function OrderHistory({ onNavigateHome }: Props) {
+export default function OrderHistory({ onNavigateHome, onReorder }: Props) {
   const { getToken, isSignedIn } = useAuth();
+  const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -218,33 +220,46 @@ export default function OrderHistory({ onNavigateHome }: Props) {
                     >
                       <div className="p-5 space-y-5">
                         {/* Status Timeline */}
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-start gap-0">
                           {STATUS_ORDER.map((s, i) => {
                             const cfg = STATUS_CONFIG[s];
                             const isActive = i <= statusIdx;
                             const isCurrent = i === statusIdx;
                             return (
                               <div key={s} className="flex-1 flex flex-col items-center">
-                                <div
-                                  className={`w-full h-1.5 rounded-full ${
-                                    isActive
-                                      ? isCurrent
-                                        ? 'bg-[#FFB81C] animate-pulse'
-                                        : 'bg-[#C41E3A]'
-                                      : 'bg-[#C41E3A]/10'
-                                  }`}
-                                />
-                                <span
-                                  className={`text-[9px] font-black uppercase tracking-wider mt-1 ${
-                                    isActive ? 'text-[#C41E3A]' : 'text-[#C41E3A]/30'
-                                  }`}
-                                >
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 font-black text-xs ${
+                                  isActive
+                                    ? isCurrent
+                                      ? 'bg-[#FFB81C] border-[#C41E3A] text-[#C41E3A] animate-pulse'
+                                      : 'bg-[#C41E3A] border-[#C41E3A] text-white'
+                                    : 'bg-white border-[#C41E3A]/20 text-[#C41E3A]/30'
+                                }`}>
+                                  {i + 1}
+                                </div>
+                                {i < STATUS_ORDER.length - 1 && (
+                                  <div className={`w-full h-1 rounded-full -mt-4 ${
+                                    i < statusIdx ? 'bg-[#C41E3A]' : i === statusIdx ? 'bg-[#FFB81C]' : 'bg-[#C41E3A]/10'
+                                  }`} />
+                                )}
+                                <span className={`text-[9px] font-black uppercase tracking-wider mt-2 text-center px-1 ${
+                                  isActive ? 'text-[#C41E3A]' : 'text-[#C41E3A]/30'
+                                }`}>
                                   {cfg.label}
                                 </span>
                               </div>
                             );
                           })}
                         </div>
+
+                        {/* ETA */}
+                        {order.estimatedDeliveryAt && (order.status === 'confirmed' || order.status === 'preparing') && (
+                          <div className="bg-[#FFB81C]/10 border border-[#FFB81C]/30 rounded-xl px-4 py-2 flex items-center justify-between">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[#C41E3A]/60">Estimated Delivery</span>
+                            <span className="font-black text-sm text-[#C41E3A]">
+                              {new Date(order.estimatedDeliveryAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        )}
 
                          {/* Customer Info */}
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
@@ -338,6 +353,20 @@ export default function OrderHistory({ onNavigateHome }: Props) {
                             Rs. {Number(order.subtotal).toLocaleString()}
                           </span>
                         </div>
+
+                        {/* Reorder */}
+                        {order.status !== 'cancelled' && onReorder && Array.isArray(order.items) && order.items.length > 0 && (
+                          <button
+                            onClick={() => {
+                              onReorder(order.items);
+                              toast('success', 'Items added to your cart!');
+                            }}
+                            className="w-full flex items-center justify-center gap-2 bg-[#FFB81C] text-[#C41E3A] font-black py-3 rounded-2xl uppercase tracking-widest text-xs border-2 border-[#C41E3A] hover:bg-[#ffa71c] transition-all cursor-pointer"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                            Reorder All
+                          </button>
+                        )}
                       </div>
                     </motion.div>
                   )}

@@ -48,6 +48,7 @@ export interface OrderDetails {
   id: string;
   total: number;
   itemsCount: number;
+  estimatedDeliveryAt?: string | null;
 }
 
 export interface Order {
@@ -65,6 +66,7 @@ export interface Order {
   guestName: string | null;
   splitBill: boolean | null;
   sessionToken: string | null;
+  estimatedDeliveryAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
