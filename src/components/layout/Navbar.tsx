@@ -132,7 +132,7 @@ export default function Navbar({ cartItemCount, onCartOpen, currentPage, onNavig
         </Show>
 
         {/* Cart button */}
-        <div className="relative flex items-center">
+        <div className="relative flex items-center gap-1">
           <button
             id="cart-toggle-btn"
             onClick={onCartOpen}
@@ -150,11 +150,21 @@ export default function Navbar({ cartItemCount, onCartOpen, currentPage, onNavig
               </motion.span>
             )}
           </button>
+          {cartItemCount > 0 && (
+            <motion.span
+              initial={{ opacity: 0, x: -4 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="hidden sm:inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-widest text-green-600 bg-green-50 border border-green-300 px-1.5 py-0.5 rounded-full"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+              Saved
+            </motion.span>
+          )}
         </div>
       </div>
 
       {/* Mobile — hamburger toggle + cart */}
-      <div className="flex md:hidden items-center gap-2">
+      <div className="flex md:hidden items-center gap-1">
         <button
           onClick={onCartOpen}
           aria-label="Open shopping cart"
@@ -167,6 +177,12 @@ export default function Navbar({ cartItemCount, onCartOpen, currentPage, onNavig
             </span>
           )}
         </button>
+        {cartItemCount > 0 && (
+          <span className="inline-flex items-center gap-1 text-[7px] font-black uppercase tracking-widest text-green-600 bg-green-50 border border-green-300 px-1 py-0.5 rounded-full mr-1">
+            <span className="w-1 h-1 rounded-full bg-green-500" />
+            Saved
+          </span>
+        )}
         <button
           onClick={() => setMobileOpen((p) => !p)}
           aria-label={mobileOpen ? 'Close navigation menu' : 'Open navigation menu'}
