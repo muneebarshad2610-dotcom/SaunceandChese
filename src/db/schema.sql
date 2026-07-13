@@ -38,7 +38,17 @@ CREATE TABLE IF NOT EXISTS orders (
   created_at    TIMESTAMP DEFAULT NOW()
 );
 
+-- ─── Migrations for existing tables (from previous deployments) ──
+
+-- Add clerk_user_id to contacts if it was created without it
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS clerk_user_id VARCHAR(255);
+
+-- Add clerk_user_id to orders if it was created without it
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS clerk_user_id VARCHAR(255);
+
+-- ─── Indexes ────────────────────────────────────────────────────
+
 CREATE INDEX IF NOT EXISTS idx_menu_items_category ON menu_items (category);
 CREATE INDEX IF NOT EXISTS idx_contacts_created_at ON contacts (created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_orders_clerk_user ON orders (clerk_user_id);
 CREATE INDEX IF NOT EXISTS idx_contacts_clerk_user ON contacts (clerk_user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_clerk_user ON orders (clerk_user_id);
