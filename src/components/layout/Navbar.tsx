@@ -201,14 +201,14 @@ export default function Navbar({ cartItemCount, onCartOpen, currentPage, onNavig
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={closeMobile}
-              className="fixed inset-0 bg-black/40 z-10 md:hidden"
+              className="fixed inset-0 bg-black/40 z-40 md:hidden"
             />
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed top-[72px] right-0 bottom-0 w-72 bg-[#FDF5E6] border-l-4 border-[#C41E3A] z-20 md:hidden shadow-2xl flex flex-col"
+              className="fixed inset-0 left-auto w-72 bg-[#FDF5E6] border-l-4 border-[#C41E3A] z-50 md:hidden shadow-2xl flex flex-col"
             >
               <div className="flex-1 overflow-y-auto py-4 px-6 space-y-1">
                 {[
