@@ -74,7 +74,7 @@
 
 8. **~~No error boundaries~~** **[FIXED]** — `ErrorBoundary` component wraps the app with retro-styled fallback UI.
 
-9. **Design.Md vs actual code mismatch**: `Design.Md` describes Space Grotesk (`font-retro`) and Inter (`font-sans`) as the typefaces, but the actual CSS imports Poppins (`font-sans`) and Bebas Neue (`font-retro`).
+9. **~~Design.Md vs actual code mismatch~~** **[FIXED]** — Design.Md now correctly lists Bebas Neue (`font-retro`) and Poppins (`font-sans`).
 
 10. **~~Placeholder title tag~~** **[FIXED]** — Title is "Sauce n' Cheese — Karachi's Gooiest Feast" with full SEO/OG meta tags.
 
