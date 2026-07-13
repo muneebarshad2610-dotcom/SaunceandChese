@@ -100,3 +100,17 @@ CREATE INDEX IF NOT EXISTS idx_menu_items_category ON menu_items (category);
 CREATE INDEX IF NOT EXISTS idx_contacts_created_at ON contacts (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_contacts_clerk_user ON contacts (clerk_user_id);
 CREATE INDEX IF NOT EXISTS idx_orders_clerk_user ON orders (clerk_user_id);
+
+-- ─── Saved addresses (user profile) ─────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS saved_addresses (
+  id            SERIAL PRIMARY KEY,
+  clerk_user_id VARCHAR(255) NOT NULL,
+  label         VARCHAR(100) NOT NULL DEFAULT '',
+  address       TEXT NOT NULL,
+  phone         VARCHAR(50) NOT NULL DEFAULT '',
+  is_default    BOOLEAN DEFAULT false,
+  created_at    TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_saved_addresses_user ON saved_addresses (clerk_user_id);

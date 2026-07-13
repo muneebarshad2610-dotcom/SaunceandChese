@@ -32,6 +32,7 @@ export default function TableOrder({ onNavigateHome }: { onNavigateHome: () => v
   const [guestName, setGuestName] = useState('');
   const [editingGuestName, setEditingGuestName] = useState(false);
   const [showOrderForm, setShowOrderForm] = useState(false);
+  const [splitBill, setSplitBill] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
@@ -133,7 +134,7 @@ export default function TableOrder({ onNavigateHome }: { onNavigateHome: () => v
             ],
           })),
           subtotal: cartTotal,
-          splitBill: false,
+          splitBill,
         }),
       });
       if (!res.ok) {
@@ -424,7 +425,7 @@ export default function TableOrder({ onNavigateHome }: { onNavigateHome: () => v
               <h2 className="font-retro text-2xl text-[#C41E3A] uppercase tracking-wide mb-1">Confirm Order</h2>
               <p className="text-xs text-[#C41E3A]/60 mb-4">Table {table.tableNumber} &middot; {guestName}</p>
 
-              <div className="bg-[#C41E3A]/5 rounded-2xl p-4 mb-5 text-left text-xs space-y-1.5">
+              <div className="bg-[#C41E3A]/5 rounded-2xl p-4 mb-4 text-left text-xs space-y-1.5">
                 {cart.map((line, i) => (
                   <div key={i} className="flex justify-between">
                     <span><span className="font-black text-[#C41E3A]">{line.options.qty}x</span> {line.menuItem.name}</span>
@@ -436,6 +437,20 @@ export default function TableOrder({ onNavigateHome }: { onNavigateHome: () => v
                   <span className="text-[#C41E3A]">Rs. {cartTotal}</span>
                 </div>
               </div>
+
+              <button type="button" onClick={() => setSplitBill(!splitBill)}
+                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 mb-4 text-xs font-bold transition-all cursor-pointer ${
+                  splitBill
+                    ? 'bg-[#C41E3A]/10 border-[#C41E3A] text-[#C41E3A]'
+                    : 'bg-white/50 border-[#C41E3A]/20 text-[#C41E3A]/60'
+                }`}>
+                <span>Split Bill</span>
+                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                  splitBill ? 'bg-[#C41E3A] border-[#C41E3A]' : 'border-[#C41E3A]/30'
+                }`}>
+                  {splitBill && <Check className="w-3 h-3 text-white" />}
+                </div>
+              </button>
 
               <button type="submit" disabled={submitting}
                 className="w-full bg-[#FFB81C] text-[#C41E3A] font-black py-3.5 rounded-2xl uppercase tracking-widest text-sm shadow-lg border-2 border-[#C41E3A] hover:bg-[#ffa71c] disabled:opacity-60 transition-all cursor-pointer">

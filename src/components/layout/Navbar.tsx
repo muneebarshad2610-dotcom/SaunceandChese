@@ -7,7 +7,7 @@ import {
   UserButton,
 } from '@clerk/react';
 
-type Page = 'home' | 'menu' | 'orders' | 'admin' | 'kitchen';
+type Page = 'home' | 'menu' | 'orders' | 'admin' | 'kitchen' | 'profile';
 
 interface NavbarProps {
   cartItemCount: number;
@@ -71,6 +71,14 @@ export default function Navbar({ cartItemCount, onCartOpen, currentPage, onNavig
             }`}
           >
             My Orders
+          </button>
+          <button
+            onClick={() => onNavigate('profile')}
+            className={`transition-colors cursor-pointer ${
+              currentPage === 'profile' ? 'text-[#FFB81C]' : 'hover:text-[#FFB81C]'
+            }`}
+          >
+            Profile
           </button>
         </Show>
 
@@ -164,6 +172,16 @@ export default function Navbar({ cartItemCount, onCartOpen, currentPage, onNavig
             }`}
           >
             Orders
+          </button>
+          <button
+            onClick={() => onNavigate('profile')}
+            className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded transition-all cursor-pointer ${
+              currentPage === 'profile'
+                ? 'bg-[#C41E3A] text-white'
+                : 'text-[#C41E3A] hover:bg-[#C41E3A]/10'
+            }`}
+          >
+            Profile
           </button>
         </Show>
         {isAdmin && (

@@ -47,6 +47,18 @@ export default function KitchenView({ onNavigateHome }: Props) {
 
   useEffect(() => {
     if (newOrderAlert) {
+      try {
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        gain.gain.value = 0.3;
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        osc.stop(ctx.currentTime + 0.4);
+      } catch { }
       const timer = setTimeout(() => setNewOrderAlert(false), 3000);
       return () => clearTimeout(timer);
     }
@@ -104,6 +116,9 @@ export default function KitchenView({ onNavigateHome }: Props) {
                 <Bell className="w-4 h-4 animate-bounce" /> New Order!
               </motion.div>
             )}
+            <button onClick={() => window.print()} className="bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors cursor-pointer print-hidden" title="Print tickets">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+            </button>
             <button onClick={fetchOrders} className="bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors cursor-pointer" title="Refresh">
               <RefreshCw className="w-5 h-5" />
             </button>
@@ -245,9 +260,23 @@ export default function KitchenView({ onNavigateHome }: Props) {
       </div>
 
       {/* Auto-refresh indicator */}
-      <div className="fixed bottom-4 right-4 text-[10px] text-white/20 font-mono">
+      <div className="fixed bottom-4 right-4 text-[10px] text-white/20 font-mono print-hidden">
         Auto-refreshes every 10s
       </div>
+
+      <style>{`
+        @media print {
+          body { background: white !important; }
+          .print-hidden { display: none !important; }
+          section { background: white !important; }
+          [class*="bg-\\[\\#1A1A1A\\]"] { background: white !important; }
+          [class*="bg-\\[\\#2A2A2A\\]"] { background: #f5f5f5 !important; }
+          [class*="text-white"] { color: black !important; }
+          [class*="text-white\\/"] { color: #444 !important; }
+          [class*="border-\\]"] { border-color: #ddd !important; }
+          .grid { break-inside: avoid; }
+        }
+      `}</style>
     </section>
   );
 }

@@ -1,0 +1,835 @@
+!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notion-Like App</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --sidebar-bg: #f7f7f5;
+            --text-main: #37352f;
+            --text-block: #2eaadc; /* Notion blue */
+            --hover-bg: #efefef;
+            --border-color: #e1e1e0;
+            --active-color: #d3d1cb;
+            --editor-bg: #ffffff;
+            --editor-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #191919;
+            --sidebar-bg: #202020;
+            --text-main: #d4d4d4;
+            --text-block: #7996ec;
+            --hover-bg: #2f2f2f;
+            --border-color: #444444;
+            --active-color: #444444;
+            --editor-bg: #191919;
+        }
+
+        * {
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--editor-font);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            visibility: hidden; /* Hidden until loaded */
+        }
+
+        /* Sidebar */
+        aside {
+            width: 240px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 14px 8px;
+            transition: transform 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 8px 12px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .random-icon {
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+        }
+
+        .sidebar-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-small {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 4px 8px;
+            font-size: 12px;
+            color: var(--text-main);
+        }
+        
+        .btn-small:hover {
+            background: var(--hover-bg);
+        }
+
+        .page-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            user-select: none;
+        }
+
+        .nav-item:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .nav-item.active {
+            background-color: var(--active-color);
+        }
+
+        .nav-icon {
+            font-size: 14px;
+        }
+
+        .nav-text {
+            font-size: 14px;
+            flex: 1;
+        }
+
+        .page-title-heading {
+            font-weight: 500;
+            padding: 14px 8px 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .page-title-heading:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .add-page-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            cursor: pointer;
+            color: var(--text-main);
+            font-size: 14px;
+            border-radius: 4px;
+        }
+        
+        .add-page-btn:hover {
+            background-color: var(--hover-bg);
+        }
+
+        /* Main Editor */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .cover-image {
+            height: 20vh;
+            width: 100%;
+            background-size: cover;
+            background-position: center;
+            display: none; /* Hidden by default */
+            position: relative;
+        }
+
+        .cover-controls {
+            display: none;
+            position: absolute;
+            bottom: 10px;
+            right: 20px;
+        }
+
+        .icon-header {
+            position: absolute;
+            top: 20px;
+            left: 40px;
+            font-size: 78px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-radius: 4px;
+            padding: 4px;
+        }
+
+        .icon-header:hover {
+            background-color: rgba(55, 53, 47, 0.08);
+        }
+
+        .editor-container {
+            padding: 0 96px;
+            padding-top: 80px; /* Space for cover and icon */
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .page-blocks {
+            min-height: 400px;
+        }
+
+        /* Blocks */
+        .block {
+            position: relative;
+            padding: 3px 2px;
+            margin: 1px 0;
+            border-radius: 3px;
+            display: flex;
+            align-items: flex-start;
+            gap: 4px;
+            group: block;
+        }
+
+        .block:hover {
+            background-color: rgba(55, 53, 47, 0.03);
+        }
+
+        .block-content {
+            flex: 1;
+            min-height: 24px;
+            font-size: 16px;
+            line-height: 1.5;
+            color: var(--text-main);
+            padding: 2px 0;
+        }
+
+        .page-title-input {
+            width: 100%;
+            font-size: 40px;
+            font-weight: 700;
+            border: none;
+            outline: none;
+            color: var(--text-main);
+            padding: 8px 0;
+            margin-bottom: 20px;
+            background: transparent;
+        }
+
+        .placeholder {
+            color: #d3d1cb;
+            pointer-events: none;
+        }
+
+        /* Block Menu (Quick Action) */
+        .block-menu {
+            position: absolute;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(15, 15, 15, 0.15);
+            width: 200px;
+            z-index: 100;
+            display: none;
+            padding: 6px 0;
+            overflow-y: auto;
+            max-height: 300px;
+        }
+
+        .menu-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-item:hover {
+            background-color: var(--hover-bg);
+        }
+
+        /* Formatting Toolbar */
+        .formatting-bar {
+            position: absolute;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(15, 15, 15, 0.15);
+            z-index: 100;
+            display: none;
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .format-btn {
+            border: none;
+            background: none;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+
+        .format-btn:hover, .format-btn.active {
+            background-color: var(--hover-bg);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,0,0,0.2);
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            aside {
+                position: fixed;
+                left: -240px;
+                height: 100%;
+                z-index: 50;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            }
+            aside.open {
+                transform: translateX(240px);
+            }
+            .menu-toggle {
+                display: block;
+            }
+            .editor-container {
+                padding: 0 24px;
+                padding-top: 80px;
+            }
+            .block-menu, .formatting-bar {
+                width: 240px;
+                left: 20px !important;
+                top: 20px !important;
+                transform: none !important;
+            }
+        }
+
+        .menu-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 40;
+            background: white;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Mobile Menu Toggle -->
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+
+    <!-- Sidebar -->
+    <aside id="sidebar">
+        <div class="sidebar-header">
+            <span>Drafts</span>
+            <div class="sidebar-actions">
+                <button class="btn-small" onclick="toggleTheme()" title="Toggle Theme">🌓</button>
+                <button class="btn-small" onclick="showAIInfo()" title="Help">❓</button>
+            </div>
+        </div>
+        <div class="page-title-heading" onclick="createNewPageWithHeading()">
+            <span>📄</span> New Page
+        </div>
+        <div class="page-list" id="pageList">
+            <!-- Pages injected via JS -->
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Cover Image -->
+        <div class="cover-image" id="coverImage">
+            <div class="cover-controls">
+                <button class="btn-small" onclick="resetCover()">Change</button>
+            </div>
+        </div>
+
+        <!-- Page Icon -->
+        <div class="icon-header" id="pageIcon" onclick="changeIcon()">📄</div>
+
+        <!-- Editor Container -->
+        <div class="editor-container">
+            <!-- Page Title -->
+            <input type="text" id="pageTitle" class="page-title-input" placeholder="Untitled" autocomplete="off">
+            
+            <!-- Blocks Container -->
+            <div class="page-blocks" id="blockContainer">
+                <!-- Blocks injected via JS -->
+            </div>
+
+            <div style="height: 100px;"></div> <!-- Spacer -->
+        </div>
+    </main>
+
+    <!-- Dynamic Block Menu -->
+    <div class="block-menu" id="blockMenu">
+        <div class="menu-item" onclick="insertBlock('text')">🖊️ Text</div>
+        <div class="menu-item" onclick="insertBlock('h1')">H1 Heading</div>
+        <div class="menu-item" onclick="insertBlock('h2')">H2 Heading</div>
+        <div class="menu-item" onclick="insertBlock('quote')">💬 Quote</div>
+        <div class="menu-item" onclick="insertBlock('bullet')">• Bullet List</div>
+        <div class="menu-item" onclick="insertBlock('todo')">☑️ To-do</div>
+    </div>
+
+    <!-- Formatting Toolbar -->
+    <div class="formatting-bar" id="formatBar">
+        <button class="format-btn" onclick="formatText('bold')" title="Bold (Ctrl+B)">B</button>
+        <button class="format-btn" onclick="formatText('italic')" title="Italic (Ctrl+I)">I</button>
+        <button class="format-btn" onclick="formatText('underline')" title="Underline (Ctrl+U)">U</button>
+        <button class="format-btn" onclick="formatText('strikeThrough')" title="Strikethrough">S</button>
+    </div>
+
+    <script>
+        // --- State Management ---
+        const DB_KEY = 'notion_clone_v1';
+        let state = {
+            pages: [],
+            activePageId: null,
+            sidebarOpen: false
+        };
+
+        let draggedBlockIndex = null;
+
+        // --- Initialization ---
+        window.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            if (state.pages.length === 0) {
+                createNewPage('Welcome to your Notion Clone');
+            } else {
+                renderSidebar();
+                activatePage(state.activePageId || state.pages[0].id);
+            }
+            document.body.style.visibility = 'visible';
+            document.addEventListener('click', (e) => {
+                const blockMenu = document.getElementById('blockMenu');
+                const formatBar = document.getElementById('formatBar');
+                if (!e.target.closest('.block-menu') && !e.target.closest('.add-block')) {
+                    blockMenu.style.display = 'none';
+                }
+                if (!e.target.closest('.formatting-bar') && !e.target.closest('.block-content')) {
+                    formatBar.style.display = 'none';
+                }
+            });
+        });
+
+        // --- Core Functions ---
+
+        function loadData() {
+            const stored = localStorage.getItem(DB_KEY);
+            if (stored) {
+                state = JSON.parse(stored);
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem(DB_KEY, JSON.stringify(state));
+        }
+
+        function generateId() {
+            return Math.random().toString(36).substr(2, 9);
+        }
+
+        function getPageById(id) {
+            return state.pages.find(p => p.id === id);
+        }
+
+        function createNewPage(headingText = 'Untitled') {
+            const newPage = {
+                id: generateId(),
+                title: headingText,
+                icon: '📄',
+                cover: '',
+                blocks: [
+                    { id: generateId(), type: 'text', content: '' }
+                ]
+            };
+            state.pages.push(newPage);
+            state.activePageId = newPage.id;
+            saveData();
+            renderSidebar();
+            activatePage(newPage.id);
+        }
+
+        function createNewPageWithHeading() {
+            createNewPage();
+        }
+
+        function deletePage(e, id) {
+            e.stopPropagation();
+            if (state.pages.length === 1) {
+                showToast('Cannot delete the last page.');
+                return;
+            }
+            if (!confirm('Are you sure?')) return;
+
+            state.pages = state.pages.filter(p => p.id !== id);
+            
+            if (state.activePageId === id) {
+                state.activePageId = state.pages[0].id;
+                activatePage(state.activePageId);
+            }
+            saveData();
+            renderSidebar();
+        }
+
+        function activatePage(id) {
+            state.activePageId = id;
+            const page = getPageById(id);
+            if (!page) return;
+
+            // Update UI based on page data
+            document.getElementById('pageTitle').value = page.title;
+            document.getElementById('pageIcon').textContent = page.icon;
+            
+            const coverEl = document.getElementById('coverImage');
+            if (page.cover) {
+                coverEl.style.display = 'block';
+                coverEl.style.backgroundImage = `url(${page.cover})`;
+            } else {
+                coverEl.style.display = 'none';
+            }
+
+            renderBlocks(page.blocks);
+            renderSidebar();
+            
+            // Close sidebar on mobile after selection
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('open');
+            }
+        }
+
+        // --- Rendering ---
+
+        function renderSidebar() {
+            const list = document.getElementById('pageList');
+            list.innerHTML = '';
+
+            state.pages.forEach(page => {
+                const item = document.createElement('div');
+                item.className = `nav-item ${page.id === state.activePageId ? 'active' : ''}`;
+                item.onclick = () => activatePage(page.id);
+                item.innerHTML = `
+                    <span class="nav-icon">${page.icon}</span>
+                    <span class="nav-text">${page.title || 'Untitled'}</span>
+                    <span class="nav-icon" style="opacity:0.5; margin-left:auto;" onclick="deletePage(event, '${page.id}')">×</span>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function renderBlocks(blocks) {
+            const container = document.getElementById('blockContainer');
+            container.innerHTML = '';
+
+            blocks.forEach((block, index) => {
+                const el = createBlockElement(block, index);
+                container.appendChild(el);
+            });
+        }
+
+        function createBlockElement(block, index) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'block';
+            wrapper.dataset.index = index;
+            wrapper.draggable = true;
+
+            // Drag Events
+            wrapper.addEventListener('dragstart', (e) => {
+                draggedBlockIndex = index;
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            wrapper.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+            wrapper.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const draggedOverIndex = index;
+                moveBlock(draggedBlockIndex, draggedOverIndex);
+            });
+
+            // Add Button (Floating action bottom-right of editing strip)
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'add-block';
+            actionsDiv.innerHTML = 'plus'; 
+            actionsDiv.style.fontSize = '20px';
+            actionsDiv.style.cursor = 'pointer';
+            actionsDiv.style.color = '#d3d1cb';
+            actionsDiv.onclick = (e) => showBlockMenu(e, index);
+            
+            // Content Area
+            const content = document.createElement('div');
+            content.className = 'block-content';
+            content.contentEditable = true;
+            
+            // Handle specific block types
+            renderBlockContent(content, block);
+
+            // Event Listeners for Content
+            content.addEventListener('input', (e) => {
+                block.content = e.target.innerHTML;
+                saveData();
+            });
+            
+            content.addEventListener('focus', () => {
+                highlightActiveBlock(index);
+            });
+
+            // Formatting toolbar
+            content.addEventListener('mouseup', (e) => {
+                handleSelection(e, content);
+            });
+            
+            // Listen for feature to auto-change block type based on content (simple heuristic)
+            content.addEventListener('blur', () => {
+                if(block.type === 'text' && block.content.length > 0) {
+                    // Optional: Determine block type heuristically
+                }
+            });
+
+            wrapper.appendChild(content);
+            wrapper.appendChild(actionsDiv);
+
+            return wrapper;
+        }
+
+        function renderBlockContent(el, block) {
+            el.innerHTML = block.content;
+            if (el.innerText === '' || el.innerText === '\n') {
+                el.innerHTML = '';
+            }
+
+            if (block.type === 'h1') el.style.fontSize = '30px'; // Approximation
+        }
+
+        function moveBlock(from, to) {
+            if (from === to) return;
+            
+            const page = getPageById(state.activePageId);
+            const [movedBlock] = page.blocks.splice(from, 1);
+            page.blocks.splice(to, 0, movedBlock);
+
+            saveData();
+            renderBlocks(page.blocks);
+        }
+
+        // --- Interaction Logic ---
+
+        function showBlockMenu(e, index) {
+            e.stopPropagation();
+            const menu = document.getElementById('blockMenu');
+            menu.style.display = 'block';
+            
+            // Reposition menu near button
+            const rect = e.target.getBoundingClientRect();
+            menu.style.top = `${rect.bottom + window.scrollY}px`;
+            menu.style.left = `${rect.left}px`;
+            
+            // Store index for action
+            menu.dataset.index = index;
+        }
+
+        function insertBlock(type) {
+            const index = parseInt(document.getElementById('blockMenu').dataset.index);
+            const page = getPageById(state.activePageId);
+            
+            const newBlock = { id: generateId(), type: type, content: '' };
+            
+            // If entering To-do, add checkbox HTML
+            if (type === 'todo') {
+                newBlock.content = `
+                    <div style="display:flex; gap:8px; align-items:flex-start;">
+                        <input type="checkbox" style="margin-top:6px;">
+                        <div class="text"></div>
+                    </div>
+                `;
+            }
+
+            page.blocks.splice(index + 1, 0, newBlock);
+            saveData();
+            renderBlocks(page.blocks);
+            
+            // Focus new block
+            setTimeout(() => {
+                const blocks = document.querySelectorAll('.block');
+                if(blocks[index + 1]) {
+                    blocks[index + 1].querySelector('.block-content').focus();
+                }
+            }, 0);
+        }
+
+        // --- Formatting Toolbar ---
+
+        function handleSelection(e, element) {
+            const range = window.getSelection().getRangeAt(0);
+            const selectedText = range.toString();
+            
+            const formatBar = document.getElementById('formatBar');
+            
+            if (selectedText.length > 0) {
+                const rect = window.getSelection().getRangeAt(0).getBoundingClientRect();
+                formatBar.style.display = 'flex';
+                formatBar.style.top = `${rect.top + window.scrollY - 40}px`;
+                formatBar.style.left = `${rect.left + window.scrollX}px`;
+            } else {
+                formatBar.style.display = 'none';
+            }
+        }
+
+        function formatText(command) {
+            document.execCommand(command, false, null);
+            // Move cursor to end of content
+            const activeEl = document.activeElement;
+            if (activeEl) {
+                const sel = window.getSelection();
+                if(sel.rangeCount) {
+                    const range = sel.getRangeAt(0);
+                    range.collapse(false);
+                    range.insertNode(document.createTextNode('\u200B')); // Zero-width space to keep focus
+                }
+                saveData();
+            }
+            document.getElementById('formatBar').style.display = 'none';
+        }
+
+        // --- Page Utilities ---
+
+        // Update Title
+        const titleInput = document.getElementById('pageTitle');
+        titleInput.addEventListener('input', (e) => {
+            const page = getPageById(state.activePageId);
+            page.title = e.target.value;
+            saveData();
+            renderSidebar();
+        });
+
+        // Change Icon
+        document.getElementById('pageIcon').onclick = () => {
+            const icons = ['📄', '📝', '📋', '📌', '📁', '📂', '🌟', '💻', '💡', '🚀', '🎨', '⚔️', '🛡️'];
+            const page = getPageById(state.activePageId);
+            const currentIndex = icons.indexOf(page.icon);
+            const nextIndex = (currentIndex + 1) % icons.length;
+            page.icon = icons[nextIndex];
+            saveData();
+            renderSidebar();
+            renderBlocks(page.blocks); // Re-render icon
+        };
+
+        // Change Cover
+        function resetCover() {
+            const page = getPageById(state.activePageId);
+            page.cover = '';
+            saveData();
+            activatePage(state.activePageId);
+        }
+
+        // --- UI Utilities ---
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        function showAIInfo() {
+            // Simulating AI or Help
+            const pageInfo = getPageById(state.activePageId);
+            alert(
+                `Current Page: "${pageInfo.title}"\n\nTry these features:\n- Add new blocks using 'plus' button\n- Format text via selection\n- Drag blocks to reorder\n- Dark mode available\n- Data saved automatically`
+            );
+        }
+        
+        function highlightActiveBlock(index) {
+            // Optional: visual cue for currently active editing block
+            document.querySelectorAll('.block').forEach(b => b.style.backgroundColor = 'transparent');
+            if(document.querySelectorAll('.block')[index]) {
+                document.querySelectorAll('.block')[index].style.backgroundColor = 'rgba(55, 53, 47, 0.08)';
+            }
+        }
+
+        function showToast(message) {
+            // Simple toast implementation
+            const toast = document.createElement('div');
+            toast.textContent = message;
+            Object.assign(toast.style, {
+                position: 'fixed',
+                bottom: '20px',
+                right: '20px',
+                background: '#37352f',
+                color: 'white',
+                padding: '12px 24px',
+                borderRadius: '6px',
+                zIndex: 1000,
+                animation: 'fadein 0.3s'
+            });
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Initialize Theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.body.setAttribute('data-theme', 'dark');
+        }
+    </script>
+</body>
+</html>

@@ -97,10 +97,10 @@
 - [x] AdminTables.tsx — create/edit/delete tables, copy QR URLs to clipboard
 - [x] AdminDashboard.tsx — Tables tab added
 - [x] TableOrder.tsx — public QR landing page with menu browsing, customization, cart, order placement
-- [ ] Split bill UI — split_bill column exists but no frontend implementation
-- [ ] QR code image generation/download — admin can only copy URL, no PNG download
+- [x] Split bill UI — toggle in order confirmation modal
+- [x] QR code image generation/download — Google Charts QR API with download button
 
-## Phase 5f: Kitchen Display System [Done]
+Do## Phase 5f: Kitchen Display System [Done]
 
   - [x] Kitchen role — restricted, set by admin/manager via AdminUsers. Admins and managers can also access kitchen.
   - [x] Kitchen role check API — GET /api/kitchen/check (accepts kitchen/admin/manager)
@@ -113,8 +113,8 @@
   - [x] Order tickets with table number, guest name, items, elapsed time
   - [x] Status progression buttons — "Start Preparing" → "Mark as Ready" → Completed
   - [x] Navbar Kitchen link — gated by isKitchen prop (kitchen/admin/manager users see it)
-- [ ] Kitchen sound alert — no audio notification for new orders
-- [ ] Printable kitchen tickets — no print layout for orders
+- [x] Kitchen sound alert — Web Audio API chime on new order
+- [x] Printable kitchen tickets — print button + @media print CSS
 
 ## Phase 6: Payments [Not Started]
 
@@ -133,8 +133,8 @@
 - [x] Admin/manager role check via Clerk public_metadata
 - [x] Kitchen role check via Clerk public_metadata
 - [x] User role management via admin UI (user/manager/kitchen/admin)
-- [ ] User profile page — Clerk provides UserButton but no custom profile page
-- [ ] Saved addresses and preferences — per-user settings not yet implemented
+- [x] User profile page — ProfilePage.tsx with account info display
+- [x] Saved addresses and preferences — saved_addresses table with add/delete UI
 - [ ] Clerk production instance — currently running on dev instance
 
 ## Phase 8: Polish & Quality [Done]

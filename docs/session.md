@@ -69,6 +69,16 @@
   - **Clerk production instance** — currently running on dev instance
   - **Cart addon pricing** — useCart.ts still uses hardcoded constants for cart pricing, may differ from dynamically displayed prices
 
+## Session 14 — [2026-07-14] — Complete remaining phases (excluding Payment)
+
+- **Split bill UI**: Added toggle in TableOrder confirmation modal, sends `splitBill` in request.
+- **QR code generation**: Added "Download QR" button in AdminTables using Google Charts QR API.
+- **Kitchen sound alert**: Added Web Audio API chime when new orders arrive in KitchenView.
+- **Printable kitchen tickets**: Added print button + @media print CSS in KitchenView.
+- **User profile page**: Created ProfilePage.tsx with Clerk account info and address management.
+- **Saved addresses**: Added `saved_addresses` table, GET/POST/DELETE /api/addresses endpoints, and full CRUD UI on profile page.
+- **Files touched**: src/pages/TableOrder.tsx, src/pages/KitchenView.tsx, src/pages/AdminTables.tsx, src/pages/ProfilePage.tsx (new), src/App.tsx, src/components/layout/Navbar.tsx, src/db/schema.sql, server.ts, docs/
+
 ## Session 13 — [2026-07-14] — Fix broken marquee image URLs
 
 - **Fixed two broken marquee images**: Replaced 404 Unsplash URLs with verified working food photos.

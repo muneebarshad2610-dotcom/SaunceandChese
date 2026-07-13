@@ -620,6 +620,78 @@ app.patch('/api/users/:id/role', requireAuth, async (req, res) => {
   }
 });
 
+// ─── Saved Addresses API ─────────────────────────────────────────
+
+app.get('/api/addresses', requireAuth, async (req, res) => {
+  try {
+    const clerkUserId = (req as any).auth.userId;
+    const { rows } = await pool.query(
+      `SELECT id, label, address, phone, is_default AS "isDefault"
+       FROM saved_addresses
+       WHERE clerk_user_id = $1
+       ORDER BY is_default DESC, created_at DESC`,
+      [clerkUserId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('GET /api/addresses error:', err);
+    res.status(500).json({ error: 'Failed to fetch addresses' });
+  }
+});
+
+app.post('/api/addresses', requireAuth, async (req, res) => {
+  try {
+    const clerkUserId = (req as any).auth.userId;
+    const { label, address, phone, isDefault } = req.body;
+
+    if (!address || typeof address !== 'string' || address.trim().length < 5) {
+      res.status(400).json({ error: 'Valid address is required' });
+      return;
+    }
+
+    if (isDefault) {
+      await pool.query(
+        `UPDATE saved_addresses SET is_default = false WHERE clerk_user_id = $1`,
+        [clerkUserId]
+      );
+    }
+
+    const { rows } = await pool.query(
+      `INSERT INTO saved_addresses (clerk_user_id, label, address, phone, is_default)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, label, address, phone, is_default AS "isDefault"`,
+      [clerkUserId, label || '', address.trim(), phone || '', isDefault || false]
+    );
+
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error('POST /api/addresses error:', err);
+    res.status(500).json({ error: 'Failed to save address' });
+  }
+});
+
+app.delete('/api/addresses/:id', requireAuth, async (req, res) => {
+  try {
+    const clerkUserId = (req as any).auth.userId;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) { res.status(400).json({ error: 'Invalid ID' }); return; }
+
+    const { rowCount } = await pool.query(
+      `DELETE FROM saved_addresses WHERE id = $1 AND clerk_user_id = $2`,
+      [id, clerkUserId]
+    );
+
+    if (rowCount === 0) {
+      res.status(404).json({ error: 'Address not found' });
+      return;
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('DELETE /api/addresses/:id error:', err);
+    res.status(500).json({ error: 'Failed to delete address' });
+  }
+});
+
 // ─── Add-ons API ────────────────────────────────────────────────
 
 // GET /api/addons — public, returns all active add-ons

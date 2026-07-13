@@ -116,6 +116,17 @@ export default function AdminTables() {
     });
   };
 
+const loadQR = async (table: TableInfo) => {
+    const url = BASE_URL + '/table/' + table.qrToken;
+    const qrSrc = 'https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=' + encodeURIComponent(url);
+    const a = document.createElement('a');
+    a.href = qrSrc;
+    a.download = 'Table-' + table.tableNumber + '-QR.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const qrUrl = (table: TableInfo) => BASE_URL + '/table/' + table.qrToken;
 
   return (
@@ -177,6 +188,11 @@ export default function AdminTables() {
                     title="Copy QR URL">
                     {copiedId === table.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     {copiedId === table.id ? 'Copied!' : 'Copy QR'}
+                  </button>
+                  <button onClick={() => loadQR(table)}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#FFB81C]/20 hover:bg-[#FFB81C]/30 text-[#C41E3A] font-black text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
+                    title="Download QR PNG">
+                    <QrCode className="w-3.5 h-3.5" /> Download QR
                   </button>
                   <button onClick={() => openEdit(table)}
                     className="p-2 rounded-full hover:bg-[#C41E3A]/10 transition-colors cursor-pointer">

@@ -21,13 +21,14 @@ import KitchenView from './pages/KitchenView';
 import TableOrder from './pages/TableOrder';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import ProfilePage from './pages/ProfilePage';
 import { useCart } from './hooks/useCart';
 import { useMenuItems } from './hooks/useMenuItems';
 import type { MenuItem, OrderDetails, CheckoutFormData } from './types';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
-type Page = 'home' | 'menu' | 'orders' | 'admin' | 'kitchen' | 'terms' | 'privacy';
+type Page = 'home' | 'menu' | 'orders' | 'admin' | 'kitchen' | 'profile' | 'terms' | 'privacy';
 
 // Dynamic path-based pages (not in the Page union)
 type DynamicPage = { type: 'table'; token: string };
@@ -316,6 +317,13 @@ export default function App() {
       <ErrorBoundary>
         <KitchenView onNavigateHome={() => navigate('home')} />
       </ErrorBoundary>
+    );
+  }
+
+  // ─── Page: Profile ──────────────────────────────────────
+  if (currentPage === 'profile') {
+    return renderShell(
+      <ProfilePage onNavigateHome={() => navigate('home')} />
     );
   }
 
