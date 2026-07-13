@@ -1,13 +1,26 @@
+export interface ProductVariantOption {
+  name: string;
+  price: number;
+}
+
+export interface ProductVariant {
+  name: string;
+  required: boolean;
+  options: ProductVariantOption[];
+}
+
 export interface MenuItem {
   id: number;
   name: string;
   category: 'classic' | 'special' | 'deal';
+  productCategory: string;
   price: number;
   prices?: {
     small: number;
     regular: number;
     large: number;
   };
+  variants?: ProductVariant[];
   description: string;
   image: string;
 }
@@ -24,6 +37,7 @@ export interface CartItem {
   unitPrice: number;
   qty: number;
   selectedSize?: 'small' | 'regular' | 'large';
+  selectedVariants?: Record<string, string>;
   image: string;
   addons: CartAddon[];
 }
@@ -65,6 +79,7 @@ export interface CheckoutFormData {
 export interface AddToCartOptions {
   qty: number;
   size?: 'small' | 'regular' | 'large';
+  selectedVariants?: Record<string, string>;
   extraCheese: boolean;
   sauce: string;
   drink: string;

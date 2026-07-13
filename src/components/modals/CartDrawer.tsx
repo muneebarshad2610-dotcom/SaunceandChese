@@ -103,6 +103,11 @@ export default function CartDrawer({
                                 Size: {item.selectedSize}
                               </span>
                             )}
+                            {item.selectedVariants && Object.entries(item.selectedVariants).map(([k, v]) => (
+                              <span key={k} className="bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded border border-purple-200">
+                                {k}: {v}
+                              </span>
+                            ))}
                             {item.addons?.map((addon, i) => (
                               <span key={i} className={`px-1.5 py-0.5 rounded border ${
                                 addon.type === 'extra_cheese'

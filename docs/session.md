@@ -151,4 +151,14 @@
   - **Printable kitchen tickets** — kitchen orders shown on screen, no print layout
   - **Payments** — still not integrated
   - **Cart addon pricing** — useCart.ts still uses hardcoded constants
-freebuff --continue 2026-07-13T18-18-50.817Z
+## Session 16 — [2026-07-14] — Product categories + dynamic variants
+
+- **Product categories**: Added `product_category` column (VARCHAR) to `menu_items` — free-text food categories like Pizza, Burger, Broast, Pasta, etc. AdminProducts has a category input with autocomplete suggestions. MenuSection now shows dynamic product category filter tabs instead of hardcoded type tabs. AdminOrders/OrderHistory/KitchenView/CartDrawer display the category badge.
+- **Dynamic variants**: Added `variants` JSONB column to `menu_items` — flexible variant groups with options and price adjustments (e.g., Size: Small/Medium/Large, Spice: Mild/Hot/Extra Hot). Replaces hardcoded small/regular/large size system. QuickViewModal dynamically renders variant buttons based on the product's variant config. Backward compatible — old `price_small/regular/large` data auto-generates a "Size" variant on read.
+- **Price calculation**: Item price = base price (or old `prices[size]`) + variant option premiums. `useCart.addToCart` computes variant premium, stores `selectedVariants` on `CartItem`.
+- **QuickViewModal**: Now has both legacy size selector (for old data) and dynamic variant selectors side-by-side. Shows variant option names with price adjustments.
+- **AdminProducts**: Added product category input (with datalist suggestions), variant group editor (add/remove groups, add/remove options with name + price), expanded detail view shows variant structure.
+- **Server**: GET /api/menu-items includes `product_category` and `variants`. Old `prices` format auto-converts to variants. POST/PUT accept `product_category` and `variants`.
+- **Schema migrations**: `ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS product_category VARCHAR(100)`, `ADD COLUMN IF NOT EXISTS variants JSONB`.
+- **New types**: `ProductVariant`, `ProductVariantOption`, `selectedVariants` on `CartItem`/`AddToCartOptions`.
+- **Files touched**: src/db/schema.sql, src/types/index.ts, server.ts, src/pages/AdminProducts.tsx, src/components/sections/MenuSection.tsx, src/components/modals/QuickViewModal.tsx, src/hooks/useCart.ts, src/components/modals/CartDrawer.tsx, src/pages/AdminOrders.tsx, src/pages/KitchenView.tsx, src/pages/OrderHistory.tsx, src/pages/TableOrder.tsx, docs/

@@ -134,8 +134,15 @@ export default function TableOrder({ onNavigateHome }: { onNavigateHome: () => v
             qty: c.options.qty,
             unitPrice: c.menuItem.prices
               ? c.menuItem.prices[c.options.size || 'regular']
-              : c.menuItem.price,
+              : c.menuItem.price + (c.menuItem.variants && c.options.selectedVariants
+                ? c.menuItem.variants.reduce((acc, v) => {
+                    const optName = c.options.selectedVariants![v.name];
+                    const opt = optName ? v.options.find((o) => o.name === optName) : undefined;
+                    return acc + (opt?.price || 0);
+                  }, 0)
+                : 0),
             selectedSize: c.options.size || null,
+            selectedVariants: c.options.selectedVariants || null,
             image: c.menuItem.image,
             addons: [
               ...(c.options.extraCheese ? [{ name: 'Extra Cheese', price: extraCheesePrice, type: 'extra_cheese' as const }] : []),

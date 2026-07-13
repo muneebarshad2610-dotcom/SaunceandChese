@@ -3,20 +3,35 @@ import { type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Package, Plus, Pencil, Trash2, X, Image,
-  ChevronDown, ChevronUp, Search,
+  ChevronDown, ChevronUp, Search, List,
 } from 'lucide-react';
 import { useAuth } from '@clerk/react';
-import type { MenuItem } from '../types';
+import type { MenuItem, ProductVariant } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
+
+const PRODUCT_CATEGORIES = ['Pizza', 'Burger', 'Broast', 'Pasta', 'Sides', 'Drinks', 'Salad', 'Dessert'];
+
+interface VariantOptionForm {
+  name: string;
+  price: string;
+}
+
+interface VariantGroupForm {
+  name: string;
+  required: boolean;
+  options: VariantOptionForm[];
+}
 
 interface ProductForm {
   name: string;
   category: 'classic' | 'special' | 'deal';
+  productCategory: string;
   price: string;
   price_small: string;
   price_regular: string;
   price_large: string;
+  variants: VariantGroupForm[];
   description: string;
   image: string;
 }
@@ -24,20 +39,45 @@ interface ProductForm {
 const emptyForm: ProductForm = {
   name: '',
   category: 'classic',
+  productCategory: 'Pizza',
   price: '',
   price_small: '',
   price_regular: '',
   price_large: '',
+  variants: [],
   description: '',
   image: '',
 };
+
+function variantsToForm(v?: ProductVariant[]): VariantGroupForm[] {
+  if (!v || v.length === 0) return [];
+  return v.map((g) => ({
+    name: g.name,
+    required: g.required,
+    options: g.options.map((o) => ({ name: o.name, price: o.price.toString() })),
+  }));
+}
+
+function formToVariants(v: VariantGroupForm[]): ProductVariant[] {
+  return v
+    .filter((g) => g.name.trim())
+    .map((g) => ({
+      name: g.name.trim(),
+      required: g.required,
+      options: g.options
+        .filter((o) => o.name.trim())
+        .map((o) => ({ name: o.name.trim(), price: parseFloat(o.price) || 0 })),
+    }))
+    .filter((g) => g.options.length > 0);
+}
 
 export default function AdminProducts() {
   const { getToken } = useAuth();
   const [items, setItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [catFilter, setCatFilter] = useState<string>('all');
+  const [pcFilter, setPcFilter] = useState<string>('all');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
@@ -61,6 +101,8 @@ export default function AdminProducts() {
     fetchItems();
   }, [fetchItems]);
 
+  const productCategories = [...new Set(items.map((i) => i.productCategory).filter(Boolean))].sort();
+
   const openCreate = () => {
     setEditingId(null);
     setForm(emptyForm);
@@ -72,10 +114,12 @@ export default function AdminProducts() {
     setForm({
       name: item.name,
       category: item.category,
+      productCategory: item.productCategory || 'Pizza',
       price: item.price?.toString() || '',
       price_small: item.prices?.small?.toString() || '',
       price_regular: item.prices?.regular?.toString() || '',
       price_large: item.prices?.large?.toString() || '',
+      variants: variantsToForm(item.variants),
       description: item.description,
       image: item.image,
     });
@@ -109,10 +153,12 @@ export default function AdminProducts() {
       const body = {
         name: form.name,
         category: form.category,
+        product_category: form.productCategory,
         price: form.price || '0',
         price_small: form.price_small || null,
         price_regular: form.price_regular || null,
         price_large: form.price_large || null,
+        variants: formToVariants(form.variants),
         description: form.description,
         image: form.image,
       };
@@ -147,12 +193,13 @@ export default function AdminProducts() {
   };
 
   const filtered = items.filter((item) => {
-    const matchesCat = categoryFilter === 'all' || item.category === categoryFilter;
+    const matchesCat = catFilter === 'all' || item.category === catFilter;
+    const matchesPc = pcFilter === 'all' || item.productCategory === pcFilter;
     const matchesSearch =
       !searchQuery ||
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCat && matchesSearch;
+    return matchesCat && matchesPc && matchesSearch;
   });
 
   const counts = {
@@ -160,6 +207,51 @@ export default function AdminProducts() {
     classic: items.filter((i) => i.category === 'classic').length,
     special: items.filter((i) => i.category === 'special').length,
     deal: items.filter((i) => i.category === 'deal').length,
+  };
+
+  const addVariantGroup = () => {
+    setForm((f) => ({
+      ...f,
+      variants: [...f.variants, { name: '', required: true, options: [{ name: '', price: '0' }] }],
+    }));
+  };
+
+  const updateVariantGroup = (gi: number, patch: Partial<VariantGroupForm>) => {
+    setForm((f) => {
+      const next = [...f.variants];
+      next[gi] = { ...next[gi], ...patch };
+      return { ...f, variants: next };
+    });
+  };
+
+  const removeVariantGroup = (gi: number) => {
+    setForm((f) => ({ ...f, variants: f.variants.filter((_, i) => i !== gi) }));
+  };
+
+  const addVariantOption = (gi: number) => {
+    setForm((f) => {
+      const next = [...f.variants];
+      next[gi] = { ...next[gi], options: [...next[gi].options, { name: '', price: '0' }] };
+      return { ...f, variants: next };
+    });
+  };
+
+  const updateVariantOption = (gi: number, oi: number, patch: Partial<VariantOptionForm>) => {
+    setForm((f) => {
+      const next = [...f.variants];
+      const opts = [...next[gi].options];
+      opts[oi] = { ...opts[oi], ...patch };
+      next[gi] = { ...next[gi], options: opts };
+      return { ...f, variants: next };
+    });
+  };
+
+  const removeVariantOption = (gi: number, oi: number) => {
+    setForm((f) => {
+      const next = [...f.variants];
+      next[gi] = { ...next[gi], options: next[gi].options.filter((_, i) => i !== oi) };
+      return { ...f, variants: next };
+    });
   };
 
   return (
@@ -183,14 +275,14 @@ export default function AdminProducts() {
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-2">
+        {/* Type filters */}
+        <div className="flex flex-wrap gap-2 mb-3">
           {(['all', 'classic', 'special', 'deal'] as const).map((key) => (
             <button
               key={key}
-              onClick={() => setCategoryFilter(key)}
+              onClick={() => setCatFilter(key)}
               className={`px-3 py-1.5 rounded-full font-black text-[10px] uppercase tracking-wider border-2 transition-all cursor-pointer ${
-                categoryFilter === key
+                catFilter === key
                   ? 'bg-[#FFB81C] text-[#C41E3A] border-[#FFB81C]'
                   : 'bg-white/15 text-white/80 border-white/20 hover:bg-white/25'
               }`}
@@ -199,6 +291,35 @@ export default function AdminProducts() {
             </button>
           ))}
         </div>
+
+        {/* Product category filters */}
+        {productCategories.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setPcFilter('all')}
+              className={`px-3 py-1 rounded-full font-black text-[9px] uppercase tracking-wider border transition-all cursor-pointer ${
+                pcFilter === 'all'
+                  ? 'bg-white text-[#C41E3A] border-white'
+                  : 'bg-white/10 text-white/70 border-white/20 hover:bg-white/20'
+              }`}
+            >
+              All Categories
+            </button>
+            {productCategories.map((pc) => (
+              <button
+                key={pc}
+                onClick={() => setPcFilter(pc)}
+                className={`px-3 py-1 rounded-full font-black text-[9px] uppercase tracking-wider border transition-all cursor-pointer ${
+                  pcFilter === pc
+                    ? 'bg-white text-[#C41E3A] border-white'
+                    : 'bg-white/10 text-white/70 border-white/20 hover:bg-white/20'
+                }`}
+              >
+                {pc}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-8">
@@ -246,6 +367,7 @@ export default function AdminProducts() {
           {filtered.map((item) => {
             const isExpanded = expandedId === item.id;
             const hasSizes = !!item.prices;
+            const hasVariants = !!item.variants && item.variants.length > 0;
             return (
               <motion.div
                 key={item.id}
@@ -274,6 +396,11 @@ export default function AdminProducts() {
                       }`}>
                         {item.category}
                       </span>
+                      {item.productCategory && (
+                        <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">
+                          {item.productCategory}
+                        </span>
+                      )}
                     </div>
                     <p className="text-[11px] text-[#C41E3A]/50 mt-0.5 truncate">
                       {hasSizes ? 'Rs. ' + item.prices!.small + ' - ' + item.prices!.large : 'Rs. ' + item.price}
@@ -317,6 +444,24 @@ export default function AdminProducts() {
                           </div>
                         ) : (
                           <span className="font-bold">Price: Rs. {item.price}</span>
+                        )}
+                        {hasVariants && (
+                          <div className="space-y-1">
+                            <span className="font-bold block">Variants:</span>
+                            {item.variants!.map((v, vi) => (
+                              <div key={vi} className="ml-3">
+                                <span className="font-semibold">{v.name}</span>
+                                <span className="text-[#C41E3A]/50 ml-1">{v.required ? '(required)' : '(optional)'}</span>
+                                <div className="ml-3 text-[#C41E3A]/70">
+                                  {v.options.map((o, oi) => (
+                                    <span key={oi} className="mr-3">
+                                      {o.name}{o.price > 0 ? ' (+Rs. ' + o.price + ')' : ''}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
                     </motion.div>
@@ -363,14 +508,16 @@ export default function AdminProducts() {
               </div>
 
               <form onSubmit={handleSave} className="p-8 space-y-4 text-left">
+                {/* Name */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-widest text-[#C41E3A]/60">Name *</label>
                   <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
                     className="w-full bg-white/70 border-2 border-[#C41E3A]/20 rounded-2xl px-4 py-3 text-sm focus:border-[#C41E3A] outline-none" required />
                 </div>
 
+                {/* Type category */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-[#C41E3A]/60">Category *</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-[#C41E3A]/60">Type *</label>
                   <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as any })}
                     className="w-full bg-white/70 border-2 border-[#C41E3A]/20 rounded-2xl px-4 py-3 text-sm focus:border-[#C41E3A] outline-none">
                     <option value="classic">Classic</option>
@@ -379,7 +526,28 @@ export default function AdminProducts() {
                   </select>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                {/* Product Category */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-[#C41E3A]/60">Product Category</label>
+                  <div className="flex gap-2">
+                    <input
+                      list="pc-suggestions"
+                      type="text"
+                      value={form.productCategory}
+                      onChange={(e) => setForm({ ...form, productCategory: e.target.value })}
+                      placeholder="e.g. Pizza, Burger, Broast..."
+                      className="flex-1 bg-white/70 border-2 border-[#C41E3A]/20 rounded-2xl px-4 py-3 text-sm focus:border-[#C41E3A] outline-none"
+                    />
+                    <datalist id="pc-suggestions">
+                      {PRODUCT_CATEGORIES.map((pc) => (
+                        <option key={pc} value={pc} />
+                      ))}
+                    </datalist>
+                  </div>
+                </div>
+
+                {/* Pricing */}
+                <div className="grid grid-cols-4 gap-3">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-[#C41E3A]/60">Price</label>
                     <input type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })}
@@ -402,12 +570,84 @@ export default function AdminProducts() {
                   </div>
                 </div>
 
+                {/* Variants Editor */}
+                <div className="space-y-2 pt-2 border-t border-[#C41E3A]/10">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-[#C41E3A]/60">
+                      <List className="w-3 h-3 inline mr-1" /> Variants
+                    </label>
+                    <button type="button" onClick={addVariantGroup}
+                      className="text-[10px] font-black text-[#C41E3A] hover:text-[#FFB81C] transition-colors cursor-pointer flex items-center gap-1">
+                      <Plus className="w-3 h-3" /> Add Group
+                    </button>
+                  </div>
+                  {form.variants.map((vg, gi) => (
+                    <div key={gi} className="bg-white/60 border border-[#C41E3A]/15 rounded-2xl p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={vg.name}
+                          onChange={(e) => updateVariantGroup(gi, { name: e.target.value })}
+                          placeholder="e.g. Size, Spice Level..."
+                          className="flex-1 bg-white border border-[#C41E3A]/20 rounded-xl px-3 py-2 text-xs font-medium focus:border-[#C41E3A] outline-none"
+                        />
+                        <label className="flex items-center gap-1 text-[10px] font-black text-[#C41E3A]/50 cursor-pointer whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={vg.required}
+                            onChange={(e) => updateVariantGroup(gi, { required: e.target.checked })}
+                            className="accent-[#C41E3A]"
+                          />
+                          Required
+                        </label>
+                        <button type="button" onClick={() => removeVariantGroup(gi)}
+                          className="p-1.5 hover:bg-red-100 rounded-full transition-colors cursor-pointer">
+                          <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                        </button>
+                      </div>
+                      <div className="space-y-1.5 pl-2">
+                        {vg.options.map((vo, oi) => (
+                          <div key={oi} className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={vo.name}
+                              onChange={(e) => updateVariantOption(gi, oi, { name: e.target.value })}
+                              placeholder="Option name"
+                              className="flex-1 bg-white border border-[#C41E3A]/15 rounded-xl px-3 py-1.5 text-[11px] font-medium focus:border-[#C41E3A] outline-none"
+                            />
+                            <div className="relative w-20">
+                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-[#C41E3A]/40 font-black">Rs.</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={vo.price}
+                                onChange={(e) => updateVariantOption(gi, oi, { price: e.target.value })}
+                                className="w-full bg-white border border-[#C41E3A]/15 rounded-xl pl-8 pr-2 py-1.5 text-[11px] font-medium focus:border-[#C41E3A] outline-none"
+                              />
+                            </div>
+                            <button type="button" onClick={() => removeVariantOption(gi, oi)}
+                              className="p-1 hover:bg-red-100 rounded-full transition-colors cursor-pointer">
+                              <X className="w-3 h-3 text-red-400" />
+                            </button>
+                          </div>
+                        ))}
+                        <button type="button" onClick={() => addVariantOption(gi)}
+                          className="text-[10px] font-black text-[#C41E3A]/40 hover:text-[#C41E3A] transition-colors cursor-pointer flex items-center gap-1 mt-1">
+                          <Plus className="w-3 h-3" /> Add Option
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Description */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-widest text-[#C41E3A]/60">Description *</label>
                   <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3}
                     className="w-full bg-white/70 border-2 border-[#C41E3A]/20 rounded-2xl px-4 py-3 text-sm focus:border-[#C41E3A] outline-none resize-none" required />
                 </div>
 
+                {/* Image */}
                 <div className="space-y-1.5">
                   <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#C41E3A]/60">
                     <Image className="w-3 h-3" /> Image URL *

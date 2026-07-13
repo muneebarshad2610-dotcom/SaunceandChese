@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Plus, Minus, Sparkles, Droplets, Wine } from 'lucide-react';
-import type { MenuItem, AddonItem } from '../../types';
+import type { MenuItem, AddonItem, ProductVariant } from '../../types';
 import { fetchAddons, getSauceOptions, getDrinkOptions, getExtraCheesePrice } from '../../types';
 
 interface Props {
@@ -9,13 +9,40 @@ interface Props {
   onClose: () => void;
   onAddToCart: (
     item: MenuItem,
-    options: { qty: number; size?: 'small' | 'regular' | 'large'; extraCheese: boolean; sauce: string; drink: string }
+    options: { qty: number; size?: 'small' | 'regular' | 'large'; selectedVariants?: Record<string, string>; extraCheese: boolean; sauce: string; drink: string }
   ) => void;
+}
+
+function getDefaultVariants(variants?: ProductVariant[]): Record<string, string> {
+  const r: Record<string, string> = {};
+  if (!variants) return r;
+  for (const v of variants) {
+    if (v.required && v.options.length > 0) {
+      r[v.name] = v.options[0].name;
+    } else if (v.options.length > 0) {
+      r[v.name] = v.options[0].name;
+    }
+  }
+  return r;
+}
+
+function getVariantPrice(variants: ProductVariant[] | undefined, selected: Record<string, string>): number {
+  if (!variants) return 0;
+  let total = 0;
+  for (const v of variants) {
+    const optName = selected[v.name];
+    if (optName) {
+      const opt = v.options.find((o) => o.name === optName);
+      if (opt) total += opt.price;
+    }
+  }
+  return total;
 }
 
 export default function QuickViewModal({ item, onClose, onAddToCart }: Props) {
   const [qty, setQty] = useState(1);
   const [selectedSize, setSelectedSize] = useState<'small' | 'regular' | 'large'>('small');
+  const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [extraCheese, setExtraCheese] = useState(false);
   const [sauce, setSauce] = useState('Ketchup');
   const [drink, setDrink] = useState('');
@@ -29,6 +56,7 @@ export default function QuickViewModal({ item, onClose, onAddToCart }: Props) {
     if (!item) return;
     setQty(1);
     setSelectedSize('small');
+    setSelectedVariants(getDefaultVariants(item.variants));
     setExtraCheese(false);
     setSauce('Ketchup');
     setDrink('');
@@ -44,11 +72,13 @@ export default function QuickViewModal({ item, onClose, onAddToCart }: Props) {
     }
   }, [sauceOptions, sauce]);
 
-  const currentItemPrice = item
+  const basePrice = item
     ? item.prices
       ? item.prices[selectedSize]
       : item.price
     : 0;
+  const variantPremium = item ? getVariantPrice(item.variants, selectedVariants) : 0;
+  const currentItemPrice = basePrice + variantPremium;
 
   const selectedDrinkPrice = drink
     ? drinkOptions.find((d) => d.name === drink)?.price ?? 0
@@ -62,6 +92,7 @@ export default function QuickViewModal({ item, onClose, onAddToCart }: Props) {
     onAddToCart(item, {
       qty,
       size: item.prices ? selectedSize : undefined,
+      selectedVariants: Object.keys(selectedVariants).length > 0 ? selectedVariants : undefined,
       extraCheese,
       sauce,
       drink,
@@ -141,19 +172,52 @@ export default function QuickViewModal({ item, onClose, onAddToCart }: Props) {
                   <div className="flex-1 min-w-0">
                     <h2 className="font-retro text-4xl sm:text-5xl text-[#C41E3A] uppercase tracking-wide leading-tight">{item.name}</h2>
                     <p className="text-xs text-[#C41E3A]/70 leading-relaxed mt-1">{item.description}</p>
+                    {item.productCategory && (
+                      <span className="inline-block mt-1 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">
+                        {item.productCategory}
+                      </span>
+                    )}
                   </div>
                   <span className="text-2xl font-black text-[#FFB81C] whitespace-nowrap font-retro tracking-wider">Rs. {currentItemPrice}</span>
                 </div>
               </div>
 
               <div className="space-y-5 pt-2 border-t border-[#C41E3A]/10">
-                {/* Size selector */}
-                {item.prices && (
+                {/* Legacy Size selector (for old data without variants) */}
+                {item.prices && !item.variants && (
                   <div className="space-y-2">
                     <label className="font-black uppercase text-[10px] tracking-widest text-[#C41E3A]/50 block">Select Pizza Size</label>
                     <div className="flex gap-2">{sizeBtns}</div>
                   </div>
                 )}
+
+                {/* Dynamic Variant selectors */}
+                {item.variants?.map((v) => (
+                  <div key={v.name} className="space-y-2">
+                    <label className="font-black uppercase text-[10px] tracking-widest text-[#C41E3A]/50 block">
+                      {v.name}
+                      {!v.required && <span className="normal-case text-[8px] text-[#C41E3A]/30 ml-1">(optional)</span>}
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {v.options.map((o) => {
+                        const active = selectedVariants[v.name] === o.name;
+                        return (
+                          <button
+                            key={o.name}
+                            onClick={() => setSelectedVariants((prev) => ({ ...prev, [v.name]: o.name }))}
+                            className={'px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider text-center border-2 cursor-pointer transition-all ' +
+                              (active
+                                ? 'bg-[#C41E3A] text-white border-[#C41E3A] shadow-[2px_2px_0px_0px_#FFB81C]'
+                                : 'bg-white border-[#C41E3A]/10 hover:border-[#C41E3A]/30 text-[#C41E3A]/80')}
+                          >
+                            {o.name}
+                            {o.price > 0 && <span className="block text-[8px] opacity-80">+Rs. {o.price}</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
 
                 {/* Extra Cheese - only if available */}
                 {extraCheesePrice > 0 && (

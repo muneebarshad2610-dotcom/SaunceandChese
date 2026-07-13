@@ -51,7 +51,7 @@
 
 | Table | Purpose | Status |
 |-------|---------|--------|
-| `menu_items` | Product catalog (name, category, prices, description, image) | Active — 13 seed items |
+| `menu_items` | Product catalog (name, category, product_category, prices, variants JSONB, description, image) | Active — managed via admin panel |
 | `contacts` | Contact form submissions (name, email, message, clerk_user_id) | Active |
 | `orders` | Order records (order_number, clerk_user_id, items JSONB, subtotal, status, table_id, guest_name, split_bill) | Active — 5 statuses + tableside fields |
 | `addons` | Sauces, drinks, extras (type, name, price, is_active, sort_order) | Active — seeded with defaults |
@@ -133,7 +133,7 @@ Pages:
   /kitchen       → KitchenView (kitchen role) — standalone full-screen display
   /table/:token  → TableOrder (public) — QR ordering page, no auth
 
-Shared shell (renderShell): Navbar, Footer, QuickViewModal, CartDrawer, CheckoutConfirmModal, CheckoutForm, OrderSuccessModal
+Shared shell (renderShell): Navbar, Footer, QuickViewModal, CartDrawer, CheckoutConfirmModal, CheckoutForm, PaymentModal, OrderSuccessModal
 Standalone pages (no shell): /kitchen, /table/:token, /terms, /privacy
 ```
 
@@ -170,7 +170,7 @@ Standalone pages (no shell): /kitchen, /table/:token, /terms, /privacy
 │   │   ├── ErrorBoundary.tsx
 │   │   ├── layout/  (Navbar, Footer)
 │   │   ├── sections/ (Hero, Story, Menu, Deals, Marquee, Locations)
-│   │   ├── modals/ (QuickView, CartDrawer, CheckoutConfirm, CheckoutForm, OrderSuccess)
+│   │   ├── modals/ (QuickView, CartDrawer, CheckoutConfirm, CheckoutForm, PaymentModal, OrderSuccess)
 │   │   └── ui/ (MenuCard, DealCard, SkeletonCard)
 │   └── db/
 │       ├── pool.ts             # PostgreSQL connection pool

@@ -2,19 +2,21 @@
 
 -- Menu items (burgers, pizzas, deals, etc.)
 CREATE TABLE IF NOT EXISTS menu_items (
-  id            SERIAL PRIMARY KEY,
-  name          VARCHAR(255) NOT NULL,
-  category      VARCHAR(50) NOT NULL CHECK (category IN ('classic', 'special', 'deal')),
-  price         NUMERIC(10, 2) NOT NULL,
-  price_small   NUMERIC(10, 2),
-  price_regular NUMERIC(10, 2),
-  price_large   NUMERIC(10, 2),
-  description   TEXT NOT NULL,
-  image         TEXT NOT NULL,
-  base_cheese   INTEGER DEFAULT 4 CHECK (base_cheese BETWEEN 1 AND 5),
-  base_sauce    VARCHAR(100) DEFAULT 'Liquid Gold',
-  created_at    TIMESTAMP DEFAULT NOW(),
-  updated_at    TIMESTAMP DEFAULT NOW()
+  id                SERIAL PRIMARY KEY,
+  name              VARCHAR(255) NOT NULL,
+  category          VARCHAR(50) NOT NULL CHECK (category IN ('classic', 'special', 'deal')),
+  price             NUMERIC(10, 2) NOT NULL,
+  price_small       NUMERIC(10, 2),
+  price_regular     NUMERIC(10, 2),
+  price_large       NUMERIC(10, 2),
+  product_category  VARCHAR(100) DEFAULT 'Pizza',
+  variants          JSONB DEFAULT '[]'::jsonb,
+  description       TEXT NOT NULL,
+  image             TEXT NOT NULL,
+  base_cheese       INTEGER DEFAULT 4 CHECK (base_cheese BETWEEN 1 AND 5),
+  base_sauce        VARCHAR(100) DEFAULT 'Liquid Gold',
+  created_at        TIMESTAMP DEFAULT NOW(),
+  updated_at        TIMESTAMP DEFAULT NOW()
 );
 
 -- Contact form submissions (linked to Clerk user if signed in)
@@ -95,9 +97,14 @@ CREATE TABLE IF NOT EXISTS addons (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
+-- ─── Migrations for menu_items (product_category + variants) ────
+ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS product_category VARCHAR(100) DEFAULT 'Pizza';
+ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS variants JSONB DEFAULT '[]'::jsonb;
+
 -- ─── Indexes ────────────────────────────────────────────────────
 
 CREATE INDEX IF NOT EXISTS idx_menu_items_category ON menu_items (category);
+CREATE INDEX IF NOT EXISTS idx_menu_items_product_category ON menu_items (product_category);
 CREATE INDEX IF NOT EXISTS idx_contacts_created_at ON contacts (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_contacts_clerk_user ON contacts (clerk_user_id);
 CREATE INDEX IF NOT EXISTS idx_orders_clerk_user ON orders (clerk_user_id);

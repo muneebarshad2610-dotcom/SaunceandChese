@@ -4,12 +4,6 @@ import type { MenuItem } from '../../types';
 import MenuCard from '../ui/MenuCard';
 import SkeletonCard from '../ui/SkeletonCard';
 
-const TABS = [
-  { id: 'all', label: 'All Cravings' },
-  { id: 'classic', label: 'Classic Flavours' },
-  { id: 'special', label: 'Special Flavours' },
-] as const;
-
 interface Props {
   items: MenuItem[];
   loading: boolean;
@@ -19,11 +13,27 @@ interface Props {
 
 export default function MenuSection({ items, loading, onQuickView, onQuickAdd }: Props) {
   const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [activeType, setActiveType] = useState<string>('all');
+
+  const categories = useMemo(() => {
+    const cats = [...new Set(items.filter((i) => i.category !== 'deal').map((i) => i.productCategory).filter(Boolean))];
+    return cats.sort();
+  }, [items]);
 
   const filteredItems = useMemo(() => {
-    return activeFilter === 'all'
-      ? items.filter((item) => item.category !== 'deal')
-      : items.filter((item) => item.category === activeFilter);
+    return items.filter((item) => {
+      if (item.category === 'deal') return false;
+      if (activeFilter !== 'all' && item.productCategory !== activeFilter) return false;
+      if (activeType !== 'all' && item.category !== activeType) return false;
+      return true;
+    });
+  }, [items, activeFilter, activeType]);
+
+  const typeCounts = useMemo(() => {
+    const c = { classic: 0, special: 0 };
+    const pool = activeFilter === 'all' ? items.filter((i) => i.category !== 'deal') : items.filter((i) => i.productCategory === activeFilter && i.category !== 'deal');
+    pool.forEach((i) => { if (i.category === 'classic') c.classic++; else if (i.category === 'special') c.special++; });
+    return c;
   }, [items, activeFilter]);
 
   return (
@@ -37,23 +47,52 @@ export default function MenuSection({ items, loading, onQuickView, onQuickAdd }:
         </p>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-3 mb-16">
-        {TABS.map((tab) => {
-          const isActive = activeFilter === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveFilter(tab.id)}
-              className={`px-6 py-2.5 rounded-full font-black text-xs md:text-sm uppercase tracking-widest border-2 border-[#C41E3A] cursor-pointer transition-all duration-150 ${
-                isActive
-                  ? 'bg-[#C41E3A] text-white shadow-[3px_3px_0px_0px_#FFB81C] -translate-y-0.5'
-                  : 'text-[#C41E3A] hover:bg-[#C41E3A]/5 bg-transparent'
-              }`}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
+      {/* Product category tabs */}
+      <div className="flex flex-wrap justify-center gap-3 mb-4">
+        <button
+          onClick={() => setActiveFilter('all')}
+          className={`px-6 py-2.5 rounded-full font-black text-xs md:text-sm uppercase tracking-widest border-2 border-[#C41E3A] cursor-pointer transition-all duration-150 ${
+            activeFilter === 'all'
+              ? 'bg-[#C41E3A] text-white shadow-[3px_3px_0px_0px_#FFB81C] -translate-y-0.5'
+              : 'text-[#C41E3A] hover:bg-[#C41E3A]/5 bg-transparent'
+          }`}
+        >
+          All
+        </button>
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setActiveFilter(cat)}
+            className={`px-6 py-2.5 rounded-full font-black text-xs md:text-sm uppercase tracking-widest border-2 border-[#C41E3A] cursor-pointer transition-all duration-150 ${
+              activeFilter === cat
+                ? 'bg-[#C41E3A] text-white shadow-[3px_3px_0px_0px_#FFB81C] -translate-y-0.5'
+                : 'text-[#C41E3A] hover:bg-[#C41E3A]/5 bg-transparent'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {/* Type sub-filter (classic / special) */}
+      <div className="flex flex-wrap justify-center gap-2 mb-12">
+        {[
+          { id: 'all', label: 'All Types' },
+          { id: 'classic', label: `Classic (${typeCounts.classic})` },
+          { id: 'special', label: `Special (${typeCounts.special})` },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveType(tab.id)}
+            className={`px-4 py-1.5 rounded-full font-black text-[10px] uppercase tracking-widest border cursor-pointer transition-all ${
+              activeType === tab.id
+                ? 'bg-[#FFB81C] text-[#C41E3A] border-[#FFB81C]'
+                : 'text-[#C41E3A]/50 border-[#C41E3A]/20 hover:border-[#C41E3A]/40 bg-transparent'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12">

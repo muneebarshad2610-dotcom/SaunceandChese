@@ -214,6 +214,9 @@ export default function KitchenView({ onNavigateHome }: Props) {
                         {item.selectedSize && (
                           <span className="text-white/40 text-[10px] uppercase">{item.selectedSize}</span>
                         )}
+                        {item.selectedVariants && Object.entries(item.selectedVariants).map(([k, v]: [string, string]) => (
+                          <span key={k} className="text-white/30 text-[10px] uppercase ml-2">{k}: {v}</span>
+                        ))}
                       </div>
                     ))}
                     {Array.isArray(order.items) && order.items.length > 5 && (

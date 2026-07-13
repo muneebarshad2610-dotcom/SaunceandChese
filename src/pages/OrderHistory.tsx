@@ -318,6 +318,7 @@ export default function OrderHistory({ onNavigateHome }: Props) {
                                     <p className="text-[10px] text-[#C41E3A]/50">
                                       x{item.qty}
                                       {item.selectedSize && ` • ${item.selectedSize}`}
+                                      {item.selectedVariants && Object.entries(item.selectedVariants).map(([k, v]) => ` • ${k}: ${v}`).join('')}
                                       {item.addons && item.addons.length > 0 && ` • ${item.addons.map((a: any) => a.name).join(' + ')}`}
                                     </p>
                                   </div>

@@ -1,8 +1,21 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import type { CartItem, MenuItem, AddonItem, AddToCartOptions, CartAddon } from '../types';
+import type { CartItem, MenuItem, AddonItem, AddToCartOptions, CartAddon, ProductVariant } from '../types';
 import { EXTRA_CHEESE_PRICE, DRINK_OPTIONS } from '../types';
 
 const STORAGE_KEY = 'snc_cart';
+
+function getVariantPremium(variants: ProductVariant[] | undefined, selected: Record<string, string> | undefined): number {
+  if (!variants || !selected) return 0;
+  let total = 0;
+  for (const v of variants) {
+    const optName = selected[v.name];
+    if (optName) {
+      const opt = v.options.find((o) => o.name === optName);
+      if (opt) total += opt.price;
+    }
+  }
+  return total;
+}
 
 function buildAddons(options: AddToCartOptions): CartAddon[] {
   const result: CartAddon[] = [];
@@ -20,7 +33,6 @@ function buildAddons(options: AddToCartOptions): CartAddon[] {
 }
 
 function migrateCartItem(item: any): CartItem {
-  // Handle old format: { price, customCheese, customSauceType } → { unitPrice, addons }
   if ('unitPrice' in item && 'addons' in item) return item as CartItem;
   return {
     id: item.id,
@@ -28,6 +40,7 @@ function migrateCartItem(item: any): CartItem {
     unitPrice: item.price ?? item.unitPrice ?? 0,
     qty: item.qty,
     selectedSize: item.selectedSize,
+    selectedVariants: item.selectedVariants,
     image: item.image,
     addons: item.addons ?? [],
   };
@@ -68,9 +81,10 @@ export function useCart() {
     (item: MenuItem, options: AddToCartOptions) => {
       const itemPrice = item.prices
         ? item.prices[options.size ?? 'small']
-        : item.price;
+        : item.price + getVariantPremium(item.variants, options.selectedVariants);
 
       const size = item.prices ? options.size : undefined;
+      const sv = options.selectedVariants && Object.keys(options.selectedVariants).length > 0 ? options.selectedVariants : undefined;
       const addons = buildAddons(options);
 
       setCart((prev) => {
@@ -78,6 +92,7 @@ export function useCart() {
           (c) =>
             c.id === item.id &&
             c.selectedSize === size &&
+            JSON.stringify(c.selectedVariants) === JSON.stringify(sv) &&
             JSON.stringify(c.addons) === JSON.stringify(addons)
         );
 
@@ -94,6 +109,7 @@ export function useCart() {
             unitPrice: itemPrice,
             qty: options.qty,
             selectedSize: size,
+            selectedVariants: sv,
             image: item.image,
             addons,
           });
@@ -106,9 +122,18 @@ export function useCart() {
 
   const quickAddToCart = useCallback(
     (item: MenuItem) => {
+      const defaultVariants: Record<string, string> = {};
+      if (item.variants) {
+        for (const v of item.variants) {
+          if (v.options.length > 0) {
+            defaultVariants[v.name] = v.options[0].name;
+          }
+        }
+      }
       addToCart(item, {
         qty: 1,
         size: item.prices ? 'small' : undefined,
+        selectedVariants: Object.keys(defaultVariants).length > 0 ? defaultVariants : undefined,
         extraCheese: false,
         sauce: 'Ketchup',
         drink: '',

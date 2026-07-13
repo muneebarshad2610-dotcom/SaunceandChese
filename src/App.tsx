@@ -14,6 +14,7 @@ import QuickViewModal from './components/modals/QuickViewModal';
 import CartDrawer from './components/modals/CartDrawer';
 import CheckoutConfirmModal from './components/modals/CheckoutConfirmModal';
 import CheckoutForm from './components/modals/CheckoutForm';
+import PaymentModal from './components/modals/PaymentModal';
 import OrderSuccessModal from './components/modals/OrderSuccessModal';
 import OrderHistory from './pages/OrderHistory';
 import AdminDashboard from './pages/AdminDashboard';
@@ -82,6 +83,8 @@ export default function App() {
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
   const [lastOrderDetails, setLastOrderDetails] = useState<OrderDetails | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const pendingOrderRef = useRef<{ formData: CheckoutFormData; orderId: string } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isKitchen, setIsKitchen] = useState(false);
   const adminCheckedRef = useRef(false);
@@ -161,13 +164,26 @@ export default function App() {
     setIsCartOpen(true);
   }, []);
 
-  // Submit order with customer details
+  // Submit order with customer details — stores data and opens payment modal
   const handleConfirmCheckout = useCallback(
-    async (formData: CheckoutFormData) => {
+    (formData: CheckoutFormData) => {
       if (!isSignedIn) return;
+      const orderId = 'SNC-' + Math.floor(100000 + Math.random() * 900000);
+      pendingOrderRef.current = { formData, orderId };
+      setIsCheckoutOpen(false);
+      setShowPaymentModal(true);
+    },
+    [isSignedIn]
+  );
+
+  // After payment succeeds, actually create the order
+  const handlePaymentSuccess = useCallback(
+    async (_transactionId: string) => {
+      const pending = pendingOrderRef.current;
+      if (!pending) return;
+      const { formData, orderId } = pending;
 
       setCheckoutLoading(true);
-      const orderId = 'SNC-' + Math.floor(100000 + Math.random() * 900000);
 
       try {
         const token = await getToken();
@@ -199,6 +215,7 @@ export default function App() {
       } catch (err) {
         console.error('Order submission failed:', err);
         setCheckoutLoading(false);
+        setShowPaymentModal(false);
         alert(err instanceof Error ? err.message : 'Failed to place order. Please try again.');
         return;
       }
@@ -208,13 +225,19 @@ export default function App() {
         total: cartSubtotal,
         itemsCount: cartItemCount,
       });
+      setShowPaymentModal(false);
       setShowOrderSuccess(true);
-      setIsCheckoutOpen(false);
       clearCart();
       setCheckoutLoading(false);
+      pendingOrderRef.current = null;
     },
     [isSignedIn, getToken, cart, cartSubtotal, cartItemCount, clearCart]
   );
+
+  const handlePaymentCancel = useCallback(() => {
+    setShowPaymentModal(false);
+    setIsCheckoutOpen(true);
+  }, []);
 
   const handleContactSubmit = useCallback(
     async (data: { name: string; email: string; message: string }) => {
@@ -286,6 +309,13 @@ export default function App() {
           }}
           onSubmit={handleConfirmCheckout}
           loading={checkoutLoading}
+        />
+
+        <PaymentModal
+          isOpen={showPaymentModal}
+          amount={cartSubtotal}
+          onSuccess={handlePaymentSuccess}
+          onCancel={handlePaymentCancel}
         />
 
         <OrderSuccessModal

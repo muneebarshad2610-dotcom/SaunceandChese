@@ -172,7 +172,8 @@ export default function AdminOrders({ onNavigateHome }: Props) {
         ${items.map((i: any) => {
           const unitPrice = i.unitPrice ?? i.price ?? 0;
           const addons = i.addons?.map((a: any) => a.name).join(' + ') || '';
-          const name = i.name + (i.selectedSize ? ' (' + i.selectedSize + ')' : '') + (addons ? ' - ' + addons : '');
+          const variantStr = i.selectedVariants ? Object.entries(i.selectedVariants).map(([k, v]: [string, string]) => k + ': ' + v).join(', ') : '';
+          const name = i.name + (i.selectedSize ? ' (' + i.selectedSize + ')' : '') + (variantStr ? ' [' + variantStr + ']' : '') + (addons ? ' - ' + addons : '');
           return `<tr><td>${name}</td><td class="qty">${i.qty}</td><td class="price">Rs. ${Number(unitPrice).toLocaleString()}</td><td class="price">Rs. ${(unitPrice * i.qty).toLocaleString()}</td></tr>`;
         }).join('')}
       </table>
@@ -512,6 +513,7 @@ export default function AdminOrders({ onNavigateHome }: Props) {
                                     <p className="text-[10px] text-[#C41E3A]/50">
                                       x{item.qty}
                                       {item.selectedSize && ` • ${item.selectedSize}`}
+                                      {item.selectedVariants && Object.entries(item.selectedVariants).map(([k, v]) => ` • ${k}: ${v}`).join('')}
                                       {item.addons && item.addons.length > 0 && ` • ${item.addons.map((a: any) => a.name).join(' + ')}`}
                                     </p>
                                   </div>

@@ -112,6 +112,7 @@ app.get('/api/menu-items', async (_req, res) => {
         price_small  AS "small",
         price_regular AS "regular",
         price_large   AS "large",
+        product_category, variants,
         description, image,
         created_at, updated_at
       FROM menu_items
@@ -120,10 +121,25 @@ app.get('/api/menu-items', async (_req, res) => {
 
     const items = rows.map((row: any) => {
       const hasSizes = row.small !== null && row.regular !== null && row.large !== null;
+      let variants = row.variants;
+      if ((!variants || variants.length === 0) && hasSizes) {
+        variants = [
+          {
+            name: 'Size',
+            required: true,
+            options: [
+              { name: 'Small',  price: Number(row.small) - Number(row.price) },
+              { name: 'Regular', price: Number(row.regular) - Number(row.price) },
+              { name: 'Large',   price: Number(row.large) - Number(row.price) },
+            ],
+          },
+        ];
+      }
       return {
         id: row.id,
         name: row.name,
         category: row.category,
+        productCategory: row.product_category || 'Pizza',
         price: hasSizes ? 0 : Number(row.price),
         prices: hasSizes
           ? {
@@ -132,9 +148,9 @@ app.get('/api/menu-items', async (_req, res) => {
               large: Number(row.large),
             }
           : undefined,
+        variants: variants?.length > 0 ? variants : undefined,
         description: row.description,
         image: row.image,
-
       };
     });
 
@@ -465,7 +481,7 @@ app.post('/api/menu-items', requireAuth, async (req, res) => {
     const adminUser = await requireAdminOrManager(req, res);
     if (!adminUser) return;
 
-    const { name, category, price, price_small, price_regular, price_large, description, image, base_cheese, base_sauce } = req.body;
+    const { name, category, price, price_small, price_regular, price_large, product_category, variants, description, image, base_cheese, base_sauce } = req.body;
 
     if (!name || typeof name !== 'string' || name.trim().length < 1) {
       res.status(400).json({ error: 'Name is required' });
@@ -485,10 +501,11 @@ app.post('/api/menu-items', requireAuth, async (req, res) => {
     }
 
     const basePrice = price_small || price_regular || price_large ? 0 : (parseFloat(price) || 0);
+    const variantsJson = variants && Array.isArray(variants) && variants.length > 0 ? JSON.stringify(variants) : '[]';
 
     const { rows } = await pool.query(
-      `INSERT INTO menu_items (name, category, price, price_small, price_regular, price_large, description, image, base_cheese, base_sauce)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO menu_items (name, category, price, price_small, price_regular, price_large, product_category, variants, description, image, base_cheese, base_sauce)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING id, name, category, created_at`,
       [
         name.trim(),
@@ -497,6 +514,8 @@ app.post('/api/menu-items', requireAuth, async (req, res) => {
         price_small ? parseFloat(price_small) : null,
         price_regular ? parseFloat(price_regular) : null,
         price_large ? parseFloat(price_large) : null,
+        product_category || 'Pizza',
+        variantsJson,
         description.trim(),
         image.trim(),
         base_cheese ? parseInt(base_cheese, 10) : 4,
@@ -524,13 +543,15 @@ app.put('/api/menu-items/:id', requireAuth, async (req, res) => {
       return;
     }
 
-    const { name, category, price, price_small, price_regular, price_large, description, image, base_cheese, base_sauce } = req.body;
+    const { name, category, price, price_small, price_regular, price_large, product_category, variants, description, image, base_cheese, base_sauce } = req.body;
+
+    const variantsJson = variants && Array.isArray(variants) && variants.length > 0 ? JSON.stringify(variants) : '[]';
 
     const { rows } = await pool.query(
       `UPDATE menu_items
        SET name = $1, category = $2, price = $3, price_small = $4, price_regular = $5, price_large = $6,
-           description = $7, image = $8, base_cheese = $9, base_sauce = $10, updated_at = NOW()
-       WHERE id = $11
+           product_category = $7, variants = $8, description = $9, image = $10, base_cheese = $11, base_sauce = $12, updated_at = NOW()
+       WHERE id = $13
        RETURNING id, name, category, updated_at`,
       [
         name.trim(),
@@ -539,6 +560,8 @@ app.put('/api/menu-items/:id', requireAuth, async (req, res) => {
         price_small ? parseFloat(price_small) : null,
         price_regular ? parseFloat(price_regular) : null,
         price_large ? parseFloat(price_large) : null,
+        product_category || 'Pizza',
+        variantsJson,
         description.trim(),
         image.trim(),
         base_cheese ? parseInt(base_cheese, 10) : 4,

@@ -63,3 +63,13 @@
   - **App.tsx**: Routes for /kitchen and /table/:token
 - **Files touched**: server.ts, src/db/schema.sql, src/db/seed.sql, src/App.tsx, src/types/index.ts, src/pages/TableOrder.tsx (new), src/pages/KitchenView.tsx, src/pages/AdminTables.tsx, src/pages/AdminDashboard.tsx, src/pages/AdminUsers.tsx, src/components/layout/Navbar.tsx, docs/
 - **Known issues / TODO**: Split bill UI not implemented. No QR image download. No kitchen sound alert. No printable tickets. Payments not integrated. Cart uses hardcoded prices.
+
+## [2026-07-14] — Product categories + dynamic variants
+
+- **What was completed**:
+  - **Product categories**: `product_category` column on `menu_items` — free-text food categories (Pizza, Burger, Broast, etc.) set in AdminProducts, displayed as badges and used as filter tabs in MenuSection
+  - **Dynamic variants**: `variants` JSONB column — flexible variant groups with options + price adjustments. Replaces hardcoded size system. QuickViewModal dynamically renders variant buttons. Backward compatible with old data.
+  - **Price calculation**: Base price + variant option premiums. `CartItem` now stores `selectedVariants`.
+  - **AdminProducts**: Added product category input (with autocomplete) and full variant group/option editor.
+  - **Server**: All 3 menu-item endpoints handle `product_category` and `variants`. Old `prices` format auto-converts.
+- **Files touched**: src/db/schema.sql, src/types/index.ts, server.ts, src/pages/AdminProducts.tsx, src/components/sections/MenuSection.tsx, src/components/modals/QuickViewModal.tsx, src/hooks/useCart.ts, src/components/modals/CartDrawer.tsx, src/pages/AdminOrders.tsx, src/pages/KitchenView.tsx, src/pages/OrderHistory.tsx, src/pages/TableOrder.tsx, docs/
