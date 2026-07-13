@@ -10,29 +10,60 @@
 
 ## Session 2 — [2026-07-13] — Built Express backend with PostgreSQL (Phase 3 + 4)
 
-- **Task given at start of session**: Complete Phase 3 and Phase 4 with proper backend infrastructure.
+- Created Express server with auto-migration, PostgreSQL database with 3 tables and 13 seeded menu items, GET /api/menu-items and POST /api/contact endpoints.
+
+## Session 3 — [2026-07-13] — Complete rebuild with Clerk auth + production-ready features
+
+- **Task given at start of session**: "Continue making it prod ready" → then "Delete it all except docs, create again with Clerk auth"
 - **What I changed**:
+  - Deleted all old source code (src/, server.ts, index.html, login-helper.cjs, README.md, metadata.json)
+  - Installed Clerk deps: `@clerk/clerk-react`, `@clerk/express`, later migrated to `@clerk/react` v6
   - Created `server.ts` — Express server with:
-    - Auto-migration on startup (runs schema.sql + seed.sql idempotently)
-    - `GET /api/menu-items` returns all products from PostgreSQL
-    - `POST /api/contact` saves form submissions with server-side validation
-    - `GET /api/health` Health check endpoint
-    - CORS configurable via `CORS_ORIGINS` env var
-    - Request body limited to 10kb
-    - Email regex validation on contact submissions
-  - Created `src/db/pool.ts` — PostgreSQL connection pool via `pg`
-  - Created `src/db/schema.sql` — 3 tables: menu_items (with size columns), contacts, orders
-  - Created `src/db/seed.sql` — 13 menu items (5 classic, 5 special, 3 deals) with real names, descriptions, prices, Unsplash images
-  - Created `.env` — DATABASE_URL, PORT, VITE_API_URL (gitignored)
-  - Updated `package.json` — added `dev:server`, `dev:all` scripts with concurrently
-  - Updated `.gitignore` — added .env protection, *.log
-  - Updated docs — marked Phase 3 (contact backend) and Phase 4 (real product data) as Done, updated architecture.md with DB and env var info
-- **What's working now**: Server starts, connects to Railway PostgreSQL, creates tables, seeds data. GET /api/menu-items returns 13 real items. POST /api/contact saves submissions. Frontend fetches from the API via useMenuItems hook. The menu now shows actual products when running both servers.
+    - `clerkMiddleware()` on all routes + `requireAuth()` on POST /api/orders
+    - Auto-migration (schema.sql + seed.sql) on startup
+    - 4 endpoints: GET /api/menu-items, POST /api/contact, POST /api/orders, GET /api/health
+    - CLERK_SECRET_KEY startup check, CORS config, 10kb body limit
+  - Created database layer: `src/db/pool.ts`, `src/db/schema.sql`, `src/db/seed.sql`
+    - Schema: menu_items (13 items), contacts, orders — all with `clerk_user_id`
+  - Created React frontend with:
+    - `main.tsx` — ClerkProvider wrapping the app
+    - `App.tsx` — useAuth for isSignedIn + getToken, async checkout with Bearer token
+    - `ErrorBoundary.tsx` — class component catching runtime errors with retro fallback UI
+    - `Navbar.tsx` — Show component for signed-in/signed-out, SignInButton, SignUpButton, UserButton
+    - `CartDrawer.tsx` — auth gate: "Sign In to Checkout" when not signed in
+    - All sections (Hero, Story, Menu, Deals, Marquee, Locations) with skeleton loading
+    - All modals (QuickView with cheese-pull fix, CartDrawer, OrderSuccess)
+    - All UI cards (MenuCard, DealCard, SkeletonCard)
+  - Added production-ready features:
+    - SEO/OG meta tags, favicon, canonical URL in index.html
+    - `loading="lazy"` on all below-fold images
+    - Loading skeleton states for menu items and deals
+    - Fixed cheese-pull drag drift bug (useRef + info.point.y)
+    - Contact form error display (no longer silently swallowed)
+    - ErrorBoundary wrapping the entire app
+  - Clerk CLI setup:
+    - Installed Clerk CLI globally
+    - Signed in as `muneebarshad2610@gmail.com`
+    - Initialized with `clerk init --app app_3GSN1PxJfx14wV2WxNTxBsq9kfh`
+    - `clerk doctor` — all checks pass
+    - Migrated imports from `@clerk/clerk-react` v5 to `@clerk/react` v6 (Show component)
+  - Cleaned up: removed `@google/genai`, `railway` unused deps, removed orphaned `nul` file
+  - Committed and pushed to GitHub (commit `5fa936e`)
+  - Updated all docs files to reflect current state
+
+- **What's working now**:
+  - Full Clerk auth flow (sign in → sign up → protected checkout → token-based orders → backend verification)
+  - Server starts and connects to PostgreSQL, creates tables, seeds data
+  - All 4 API endpoints functional
+  - Frontend fetches real menu items from API
+  - Cart persists in localStorage with auth gate on checkout
+  - Contact form saves to backend with error display
+  - ErrorBoundary catches runtime errors
+  - TypeScript compiles with zero errors
+
 - **What's broken / unfinished**:
-  - **Cart operations / order submission API** — no API endpoints for creating orders yet
-  - **Cheese-pull drag drift** — still unfixed
-  - **Clerk auth** — planned but not implemented
-  - **Gemini API** — still unused
-  - **Error handling on contact form** — if API returns an error, LocationsSection silently swallows it
-  - **Production CORS** — needs `CORS_ORIGINS` env var set for deployment
-- **What the next session should do first**: Create POST /api/orders endpoint for real checkout, or start Clerk integration.
+  - **Payments** — no payment processor integrated (mock checkout only)
+  - **Order history page** — data exists in DB but no UI to view past orders
+  - **User profile page** — Clerk UserButton provides basic profile, no custom page
+  - **Tests** — no unit, integration, or e2e tests
+  - **Production deployment** — needs Railway deployment configuration and production Clerk instance setup

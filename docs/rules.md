@@ -44,40 +44,55 @@
 
 - **Empty state UI**: Every data-driven section has a polished empty/placeholder state (menu, deals, cart)
 - **localStorage persistence**: Cart saved/loaded via `JSON.parse/stringify` under key `snc_cart`
-- **No API calls**: Zero fetch/axios/XMLHttpRequest calls anywhere in the code
+- **API calls**: Fetch from Express backend (`/api/menu-items`, `/api/contact`, `/api/orders`) with Clerk Bearer token for protected endpoints
 - **External image URLs**: All images from `images.unsplash.com` with `referrerPolicy="no-referrer"`
+
+### Clerk Auth Patterns
+
+- **`@clerk/react` v6** — use `Show` component (`when="signed-in"` / `when="signed-out"`) instead of v5's `SignedIn`/`SignedOut`
+- **Imports**: `ClerkProvider`, `Show`, `SignInButton`, `SignUpButton`, `UserButton`, `useAuth` from `@clerk/react`
+- **Server-side**: `clerkMiddleware()`, `requireAuth()` from `@clerk/express`
+- **Protected API calls**: `useAuth().getToken()` → `Authorization: Bearer <token>`
 
 ---
 
 ## Known Issues / Technical Debt (Avoid Making Worse)
 
-1. **Empty hardcoded menu data**: `const MENU_ITEMS: MenuItem[] = []` — the entire product catalog is missing. All menu and deals UI renders "Kitchen Updating!" / "New Deals Preparing!" placeholders. This is the single biggest gap between what the UI supports and what actually works.
+1. **~~Empty hardcoded menu data~~** **[FIXED]** — 13 real products seeded in PostgreSQL.
 
-2. **Cheese-pull drag drift**: The `onPan` handler for the cheese-pull interaction accumulates `pullHeight` relative to the last drag position rather than using absolute pointer position. Each drag session starts from where the previous one ended, causing position drift. Should use `info.point.y` instead of `info.offset.y` for the baseline, or reset the delta each frame.
+2. **~~Cheese-pull drag drift~~** **[FIXED]** — Now uses `useRef` + `info.point.y` instead of accumulative `info.offset.y`.
 
-3. ~~**Single monolithic component**: `App.tsx` is ~1300 lines. Every section (hero, story, menu, deals, marquee, locations, footer, cart, modals, success modal) is in one component.~~ **[FIXED]** — Refactored into 14 components across `layout/`, `sections/`, `modals/`, and `ui/` directories plus 2 custom hooks. App.tsx is now ~100 lines.
+3. **~~Single monolithic component~~** **[FIXED]** — Refactored into 14 components across `layout/`, `sections/`, `modals/`, and `ui/` directories.
 
-4. **Unused dependencies**: `express`, `@google/genai`, `dotenv`, `tsx` are in `package.json` dependencies but are unused. They bloat the install and create confusion about the project's architecture.
+4. **~~Unused dependencies~~** **[FIXED]** — `@google/genai`, `railway`, `@clerk/clerk-react` removed.
 
-5. **Unused icon imports**: `Heart`, `ChevronRight`, `TrendingUp`, `Send` are imported from `lucide-react` but never rendered.
+5. **~~Unused icon imports~~** **[FIXED]** — Cleaned up in the refactoring pass.
 
-6. **Fake checkout**: The "Checkout Now" button generates a random order ID and clears localStorage. There is no actual order processing, payment, or fulfillment. The "Live Kitchen Tracker" is purely decorative animation. If this is intended as a real ordering app, this needs backend integration.
+6. **~~Fake checkout~~** **[FIXED]** — Orders are now submitted to `POST /api/orders` with Clerk authentication and stored in PostgreSQL.
 
-7. **Contact form submits nowhere**: The form validates required fields client-side and shows a success toast, but data is discarded. No API endpoint is called.
+7. **~~Contact form submits nowhere~~** **[FIXED]** — Submits to `POST /api/contact`, saves to PostgreSQL with error display to user.
 
-8. **No error boundaries**: If any component throws during render, the entire app will unmount (blank page).
+8. **~~No error boundaries~~** **[FIXED]** — `ErrorBoundary` component wraps the app with retro-styled fallback UI.
 
 9. **Design.Md vs actual code mismatch**: `Design.Md` describes Space Grotesk (`font-retro`) and Inter (`font-sans`) as the typefaces, but the actual CSS imports Poppins (`font-sans`) and Bebas Neue (`font-retro`).
 
-10. ~~**Placeholder title tag**: `index.html` title is "My Google AI Studio App" — not the actual brand name ("Sauce n' Cheese").~~ **[FIXED]** — Title updated to "Sauce n' Cheese — Karachi's Gooiest Feast" with meta description.
+10. **~~Placeholder title tag~~** **[FIXED]** — Title is "Sauce n' Cheese — Karachi's Gooiest Feast" with full SEO/OG meta tags.
 
-11. **No image optimization**: Hero and menu images load at full resolution from Unsplash with no lazy loading or responsive sizes.
+11. **~~No image optimization~~** **[FIXED]** — `loading="lazy"` added to all below-fold images.
+
+12. **No payment processing**: Checkout generates a mock order. No real payment is processed.
+
+13. **No order history page**: Orders are stored in DB with `clerk_user_id` but no UI exists to view them.
+
+14. **No tests**: Zero unit, integration, or e2e tests exist.
+
+15. **No PWA support**: No service worker or manifest for offline/progressive capabilities.
 
 ---
 
 ## Standard Boundaries
 
-- **Never touch `.env` files** — environment variables for this project are managed by Google AI Studio's secrets panel
-- **Never restructure folders** — the current flat `src/` structure with a single component is the established pattern; component splitting should be done carefully with buy-in
-- **Never add new dependencies without asking** — some existing deps are already unused; any new dependency should be justified
-- **Always match existing patterns** for styling (Tailwind with custom utilities), animations (Motion), and state (useState + localStorage)
+- **Never touch `.env` files** — environment variables managed in Railway dashboard or local `.env` (gitignored)
+- **Never restructure folders** — current `src/` structure is established; component splitting should be done carefully
+- **Never add new dependencies without asking** — justify any new dependency
+- **Always match existing patterns** for styling (Tailwind with custom utilities), animations (Motion), and Clerk auth (Show, useAuth)

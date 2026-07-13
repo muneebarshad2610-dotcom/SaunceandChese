@@ -13,15 +13,28 @@
 
 ## [2026-07-13] — Built Express backend with PostgreSQL (Phase 3 + 4)
 
-- **What was completed**:
-  - Created Express server (server.ts) with auto-migration and seed on startup
-  - Connected to Railway PostgreSQL database via pg connection pool
-  - Created database schema (3 tables: menu_items, contacts, orders)
-  - Seeded 13 real menu items with proper categories, prices, sizes, descriptions, images
-  - GET /api/menu-items transforms DB rows to frontend MenuItem shape
-  - POST /api/contact saves submissions with server-side email validation
-  - CORS configurable via CORS_ORIGINS env var
-  - Updated package.json with server scripts (dev:server, dev:all with concurrently)
-  - Created .env with DATABASE_URL and VITE_API_URL (gitignored)
-- **Files touched**: server.ts (created), src/db/pool.ts (created), src/db/schema.sql (created), src/db/seed.sql (created), .env (created), .gitignore (updated), package.json (updated), docs/phases.md (updated), docs/architecture.md (updated)
-- **Known issues / TODO**: Cart operations / order submission API still needed. Cheese-pull drag drift unfixed. Clerk auth not yet implemented. Gemini API unused.
+- **What was completed**: Created Express server with auto-migration, PostgreSQL database with 3 tables and 13 seeded menu items, GET /api/menu-items and POST /api/contact endpoints.
+- **Files touched**: server.ts, src/db/, .env, .gitignore, package.json, docs/
+
+## [2026-07-13] — COMPLETE REBUILD with Clerk Auth (current state)
+
+- **What was completed**: 
+  - Deleted all old source code (except docs/ and Design.md)
+  - Fresh rebuild with full-stack architecture:
+    - Express server with Clerk session verification (clerkMiddleware + requireAuth)
+    - PostgreSQL database with `clerk_user_id` on contacts and orders tables
+    - 4 API endpoints (health, menu-items, contact, orders)
+    - React frontend with ClerkProvider, Show, SignInButton, SignUpButton, UserButton, useAuth
+    - Auth gate on checkout — must sign in to place orders
+    - All UI components (Hero, Story, Menu, Deals, Marquee, Locations, Footer)
+    - All modals (QuickView with cheese-pull fix, CartDrawer with auth gate, OrderSuccess)
+    - ErrorBoundary, SkeletonCard, loading skeletons, SEO/OG tags, lazy loading
+  - Clerk CLI initialized with app_3GSN1PxJfx14wV2WxNTxBsq9kfh
+  - Clerk doctor passes all checks
+  - Migrated from @clerk/clerk-react v5 to @clerk/react v6
+  - Removed unused dependencies (@google/genai, railway)
+  - All docs updated to reflect current state
+  - Committed and pushed to GitHub
+
+- **Files touched**: All src/, server.ts, index.html, package.json, .env.example, .gitignore, docs/
+- **Known issues / TODO**: Payments not integrated. Order history page not built. No tests yet.

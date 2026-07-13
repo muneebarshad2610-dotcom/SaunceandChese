@@ -6,36 +6,42 @@
 
 | Layer | Technology | Version | Notes |
 |-------|-----------|---------|-------|
-| Framework | React | 19.0.1 | With JSX, hooks (useState, useEffect), no class components |
-| Bundler | Vite | 6.4.3 | Dev server on port 3000, HMR via `@vitejs/plugin-react` |
+| Framework | React | 19.x | With JSX, hooks (useState, useEffect), no class components |
+| Bundler | Vite | 6.x | Dev server on port 3000, HMR via `@vitejs/plugin-react` |
 | Language | TypeScript | ~5.8.2 | `tsc --noEmit` used for linting |
 | Styling | Tailwind CSS | 4.1.14 | Via `@tailwindcss/vite` plugin, CSS-first config |
-| Animations | Motion | 12.23.24 | framer-motion successor, `motion/react` import |
-| Icons | Lucide React | 0.546.0 | Tree-shakeable SVG icons |
-| Fonts | Google Fonts | — | Poppins (sans), Bebas Neue (retro), Kalam (handwritten) — loaded via CSS `@import` |
-| Deployment | Google AI Studio | — | Metadata indicates AI Studio app with Cloud Run hosting |
-
-### Dependencies Present but Unused
-
-| Package | Version | Status |
-|---------|---------|--------|
-| express | ^4.21.2 | Installed but no server code exists |
-| @google/genai | ^2.4.0 | Installed but never imported or called |
-| dotenv | ^17.2.3 | Installed but never imported |
-| tsx | ^4.21.0 | Installed but no scripts use it |
+| Animations | Motion | 12.x | framer-motion successor, `motion/react` import |
+| Icons | Lucide React | 0.546.x | Tree-shakeable SVG icons |
+| Fonts | Google Fonts | — | Poppins (sans), Bebas Neue (retro), Kalam (handwritten) |
+| Auth (Frontend) | @clerk/react | ^6.12.2 | ClerkProvider, Show, SignInButton, SignUpButton, UserButton, useAuth |
+| Auth (Backend) | @clerk/express | ^2.1.40 | clerkMiddleware, requireAuth |
+| Server | Express | ^4.21.2 | REST API on port 3001, CORS, JSON body parsing |
+| Database | PostgreSQL | — | Hosted on Railway, connection via DATABASE_URL |
+| DB Driver | pg (node-postgres) | ^8.22.0 | Connection pool in src/db/pool.ts |
 
 ---
 
 ## Auth
 
-**Not yet implemented — Clerk is the chosen provider.**
+**Implemented — Clerk v6 (`@clerk/react`).**
 
-There is currently zero authentication in the codebase. The plan is to integrate **Clerk** (https://clerk.com) for:
-- **Frontend**: `@clerk/clerk-react` with `<ClerkProvider>` wrapping the app, pre-built `<SignIn />` / `<SignUp />` components, and route guards via `<Protect />`
-- **Backend**: Clerk SDK session verification as Express middleware for protected API routes
-- **Env vars needed**: `VITE_CLERK_PUBLISHABLE_KEY` (frontend), `CLERK_SECRET_KEY` (backend)
+- **Frontend**: `ClerkProvider` wraps the app in `main.tsx`. Auth controls use the `Show` component:
+  - `<Show when="signed-out">` renders `SignInButton` + `SignUpButton`
+  - `<Show when="signed-in">` renders `UserButton`
+- **Protected checkout**: CartDrawer checks `isSignedIn` prop — shows "Sign In to Checkout" if not authenticated
+- **API calls**: `useAuth().getToken()` fetches a Clerk session JWT, sent as `Authorization: Bearer <token>`
+- **Backend**: `clerkMiddleware()` attaches `req.auth` to all routes; `requireAuth()` on protected endpoints
 
-User accounts will enable order history, saved addresses, and preferences.
+### Environment Variables
+
+| Variable | Used In | Required | Default |
+|----------|---------|----------|---------|
+| `VITE_CLERK_PUBLISHABLE_KEY` | Frontend `main.tsx` | Yes | — |
+| `CLERK_SECRET_KEY` | Backend `server.ts` | Yes | — |
+| `DATABASE_URL` | `server.ts`, `src/db/pool.ts` | Yes | — |
+| `PORT` | `server.ts` | No | 3001 |
+| `CORS_ORIGINS` | `server.ts` | No | `http://localhost:3000,http://localhost:5173` |
+| `VITE_API_URL` | Frontend `useMenuItems.ts`, `App.tsx` | No | `http://localhost:3001` |
 
 ---
 
@@ -48,8 +54,8 @@ User accounts will enable order history, saved addresses, and preferences.
 | Table | Purpose | Status |
 |-------|---------|--------|
 | `menu_items` | Product catalog (name, category, prices, description, image, modifiers) | Active — 13 seed items |
-| `contacts` | Contact form submissions (name, email, message) | Active |
-| `orders` | Order records (order_number, clerk_user_id, items JSONB, subtotal, status) | Schema exists, no write API yet |
+| `contacts` | Contact form submissions (name, email, message, clerk_user_id) | Active |
+| `orders` | Order records (order_number, clerk_user_id, items JSONB, subtotal, status) | Active — written via API |
 
 ### Auto-migration
 
@@ -57,28 +63,28 @@ On server startup, `server.ts` auto-runs `schema.sql` (idempotent `CREATE TABLE 
 
 ---
 
-## Database
+## API Endpoints
 
-**None.** There is no database connection, no ORM (Prisma, Drizzle, etc.), no schema files, and no data persistence beyond the browser's `localStorage` (cart data under key `snc_cart`).
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/health` | None | Health check |
+| GET | `/api/menu-items` | None | Returns all products from PostgreSQL |
+| POST | `/api/contact` | None | Saves contact form (optionally linked to Clerk user) |
+| POST | `/api/orders` | `requireAuth()` | Creates order record linked to Clerk user |
 
 ---
 
 ## Payments
 
-**None.** The "Checkout Now" button in the cart drawer:
-1. Generates a random `SNC-XXXXXX` order ID on the client
-2. Clears `localStorage`
-3. Shows a confirmation modal with fake receipt details
-4. No money changes hands, no payment processor (Stripe, Razorpay, etc.) is called, no order is recorded anywhere
+**Not implemented.** The checkout flow generates a random order ID and records it in the database, but no payment processor is called. Future integration with Stripe/Razorpay is needed for real payment processing.
 
 ---
 
 ## Hosting
 
-- The app is configured for **Google AI Studio** (see `metadata.json` and `.env.example` comments)
-- `metadata.json` declares `MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API`, suggesting it's meant to run on AI Studio's Cloud Run infrastructure
-- No Vercel, Netlify, Railway, or other hosting config files exist
-- The `README.md` links to an AI Studio app: `https://ai.studio/apps/b4b3cb47-6daa-4790-80a3-d5cb756b0d7c`
+- The app is configured for **Railway** deployment
+- GitHub repo: `github.com/muneebarshad2610-dotcom/SaunceandChese`
+- No AI Studio, Vercel, or Netlify config files
 
 ---
 
@@ -87,30 +93,32 @@ On server startup, `server.ts` auto-runs `schema.sql` (idempotent `CREATE TABLE 
 This is a **single-page application (SPA) with no client-side routing library**. All sections are rendered on one page and navigated via anchor links (`href="#menu"`, `href="#story"`, etc.).
 
 ```
-Page Load
-  └─ React StrictMode Root
-       └─ App (single component)
-            ├─ Sticky Nav Bar (site-nav)
-            ├─ Hero Section
-            ├─ Our Story (#story)
-            ├─ Menu Section (#menu) — empty items state shown
-            ├─ Hot Deals (#hot-deals) — empty deals state shown
-            ├─ Instagram Marquee
-            ├─ Locations & Contact (#locations)
-            └─ Footer
-            ├─ [Modal] Quick View Customizer (conditional)
-            ├─ [Drawer] Shopping Cart (conditional)
-            └─ [Modal] Order Success (conditional)
+Page Load (StrictMode)
+  └─ ClerkProvider
+       └─ ErrorBoundary
+            └─ App
+                 ├─ Sticky Nav Bar (site-nav) — with Clerk auth buttons
+                 ├─ Hero Section
+                 ├─ Our Story (#story)
+                 ├─ Menu Section (#menu) — real products from API, skeleton loading
+                 ├─ Hot Deals (#hot-deals) — real deals from API, skeleton loading
+                 ├─ Instagram Marquee
+                 ├─ Locations & Contact (#locations) — form submits to backend
+                 └─ Footer
+                 ├─ [Modal] Quick View Customizer (conditional)
+                 ├─ [Drawer] Shopping Cart (conditional, auth gate on checkout)
+                 └─ [Modal] Order Success (conditional)
 ```
 
 ### User journey
 1. User lands on hero → scrolls or clicks nav links
-2. Clicks "Customize" on a menu item → Quick View modal opens
-3. Customizes cheese pull, sauce, size → adds to cart → cart drawer opens
-4. Adjusts quantities in cart → clicks "Checkout Now" → success modal with fake tracker
-5. Cart is cleared, order "completed"
-
-Since `MENU_ITEMS` is empty, steps 2-4 are currently unreachable through normal interaction.
+2. (Optional) Signs in via Clerk modal in nav bar
+3. Clicks "Customize" on a menu item → Quick View modal opens
+4. Customizes cheese pull, sauce, size → adds to cart → cart drawer opens
+5. Adjusts quantities in cart
+6. If signed out: sees "Sign In to Checkout" button → signs in
+7. If signed in: clicks "Checkout Now" → order submitted to backend → success modal
+8. Cart is cleared, order recorded in database
 
 ---
 
@@ -118,22 +126,25 @@ Since `MENU_ITEMS` is empty, steps 2-4 are currently unreachable through normal 
 
 ```
 /
-├── index.html                  # Entry HTML — title says "My Google AI Studio App"
+├── index.html                  # Entry HTML with SEO/OG tags
 ├── package.json                # Dependencies and scripts
-├── tsconfig.json               # TypeScript config (ES2022, bundler resolution)
-├── vite.config.ts              # Vite config — React + Tailwind plugins, path alias
-├── metadata.json               # Google AI Studio metadata
-├── .env.example                # Template for GEMINI_API_KEY and APP_URL
-├── .gitignore                  # Ignores node_modules, dist, .env*
-├── login-helper.cjs            # Unrelated: superdesign CLI login helper
-├── Design.Md                   # Design specification doc (separate from this audit)
-├── README.md                   # Generic AI Studio run instructions
-├── assets/
-│   └── .aistudio/
-│       └── .gitignore          # Ignores everything (AI Studio asset placeholder)
+├── tsconfig.json               # TypeScript config
+├── vite.config.ts              # Vite config — React + Tailwind plugins
+├── server.ts                   # Express server with Clerk auth + PostgreSQL
+├── .env.example                # Template for Clerk + PostgreSQL env vars
+├── .gitignore
+├── Design.Md                   # Design specification
+├── docs/                       # Project documentation
+│   ├── prd.md
+│   ├── architecture.md
+│   ├── phases.md
+│   ├── memory.md
+│   ├── session.md
+│   ├── rules.md
+│   └── info.md
 ├── src/
-│   ├── main.tsx                # App entry — renders <App /> in StrictMode
-│   ├── App.tsx                 # Orchestrator — wires sections, modals, hooks together
+│   ├── main.tsx                # App entry — ClerkProvider wraps <App />
+│   ├── App.tsx                 # Orchestrator with Clerk auth + error boundary
 │   ├── index.css               # Tailwind CSS imports, custom theme, keyframes
 │   ├── env.d.ts                # Vite env variable type declarations
 │   ├── types/
@@ -141,42 +152,28 @@ Since `MENU_ITEMS` is empty, steps 2-4 are currently unreachable through normal 
 │   ├── hooks/
 │   │   ├── useCart.ts          # Cart state + localStorage persistence
 │   │   └── useMenuItems.ts     # Fetch menu items from API
-│   └── components/
-│       ├── layout/
-│       │   ├── Navbar.tsx      # Sticky nav with cart badge
-│       │   └── Footer.tsx      # Brand footer with location/social
-│       ├── sections/
-│       │   ├── Hero.tsx        # Hero banner with CTAs
-│       │   ├── StorySection.tsx # Brand narrative
-│       │   ├── MenuSection.tsx  # Filter tabs + menu card grid
-│       │   ├── DealsSection.tsx # Hot deals card grid
-│       │   ├── InstagramMarquee.tsx # Infinite scrolling image strip
-│       │   └── LocationsSection.tsx # Address + contact form
-│       ├── modals/
-│       │   ├── QuickViewModal.tsx   # Product customization with cheese-pull
-│       │   ├── CartDrawer.tsx       # Slide-over cart panel
-│       │   └── OrderSuccessModal.tsx # Receipt + kitchen tracker
-│       └── ui/
-│           ├── MenuCard.tsx    # Reusable menu item card
-│           └── DealCard.tsx    # Reusable deal card
-└── docs/                       # Project documentation
+│   ├── components/
+│   │   ├── ErrorBoundary.tsx   # Error boundary with retro fallback UI
+│   │   ├── layout/
+│   │   │   ├── Navbar.tsx      # Sticky nav with Clerk auth + cart badge
+│   │   │   └── Footer.tsx      # Brand footer with location/social
+│   │   ├── sections/
+│   │   │   ├── Hero.tsx
+│   │   │   ├── StorySection.tsx
+│   │   │   ├── MenuSection.tsx  # Filter tabs + skeleton loading
+│   │   │   ├── DealsSection.tsx # Hot deals + skeleton loading
+│   │   │   ├── InstagramMarquee.tsx
+│   │   │   └── LocationsSection.tsx # Address + contact form with error display
+│   │   ├── modals/
+│   │   │   ├── QuickViewModal.tsx   # Product customization (cheese-pull fixed)
+│   │   │   ├── CartDrawer.tsx       # Cart with Clerk auth gate on checkout
+│   │   │   └── OrderSuccessModal.tsx
+│   │   └── ui/
+│   │       ├── MenuCard.tsx
+│   │       ├── DealCard.tsx
+│   │       └── SkeletonCard.tsx
+│   └── db/
+│       ├── pool.ts             # PostgreSQL connection pool
+│       ├── schema.sql          # Database schema (menu_items, contacts, orders)
+│       └── seed.sql            # 13 seed menu items
 ```
-
----
-
-## Environment Variables
-
-Found by grepping for `process.env` references:
-
-| Variable | Used In | Required | Default |
-|----------|---------|----------|---------|
-| `DATABASE_URL` | `server.ts`, `src/db/pool.ts` — PostgreSQL connection | Yes | `postgresql://...` |
-| `PORT` | `server.ts` — Express server port | No | `3001` |
-| `CORS_ORIGINS` | `server.ts` — Allowed CORS origins (comma-separated) | No | `http://localhost:3000,...` |
-| `VITE_API_URL` | Frontend `useMenuItems.ts`, `App.tsx` — API base URL | No | `http://localhost:3001` |
-| `GEMINI_API_KEY` | `.env.example` only | Unclear | `MY_GEMINI_API_KEY` |
-| `APP_URL` | `.env.example` only | Unclear | `MY_APP_URL` |
-| `DISABLE_HMR` | `vite.config.ts` — controls HMR / file watching | No | — |
-| `FORCE_COLOR` | `login-helper.cjs` — unrelated to main app | No | `0` |
-
-Note: `GEMINI_API_KEY` and `APP_URL` are only mentioned in `.env.example` and are never actually consumed by any source file.

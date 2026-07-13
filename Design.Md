@@ -29,10 +29,10 @@ The app enforces a strict three-color premium palette designed to boost appetite
 
 To maintain high visual rhythm, the application uses distinct typographic families:
 
-1. **Display Headings**: Retro-futuristic, bold sans-serif with wide tracking (`font-retro` / `Space Grotesk`) used exclusively for major category titles, brand tags, and promotional hero slogans.
-2. **Body & Controls**: Clean, highly legible sans-serif (`font-sans` / `Inter`) optimized for descriptors, pricing selectors, and navigation.
-3. **Numeric Indicators & Meta**: Monospaced type (`font-mono` / `JetBrains Mono`) applied to prices, cheese-pull multipliers, item quantities, and order transaction receipts to give a precise, digital-receipt feeling.
-4. **Accents**: Secondary casual script (`font-handwritten`) for secondary sub-headers and handwritten notes.
+1. **Display Headings**: Retro-futuristic, bold sans-serif with wide tracking (`font-retro` / `Bebas Neue`) used exclusively for major category titles, brand tags, and promotional hero slogans.
+2. **Body & Controls**: Clean, highly legible sans-serif (`font-sans` / `Poppins`) optimized for descriptors, pricing selectors, and navigation.
+3. **Numeric Indicators & Meta**: Monospaced type (`font-mono`) applied to prices, cheese-pull multipliers, item quantities, and order transaction receipts to give a precise, digital-receipt feeling.
+4. **Accents**: Secondary casual script (`font-handwritten` / `Kalam`) for secondary sub-headers and handwritten notes.
 
 ---
 
