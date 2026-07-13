@@ -1,8 +1,9 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { ShoppingBag, X, Minus, Plus, Trash2 } from 'lucide-react';
+import { SignInButton } from '@clerk/react';
 import type { CartItem } from '../../types';
 
-interface CartDrawerProps {
+interface Props {
   isOpen: boolean;
   cart: CartItem[];
   cartItemCount: number;
@@ -11,6 +12,8 @@ interface CartDrawerProps {
   onAdjustQty: (index: number, delta: number) => void;
   onRemoveItem: (index: number) => void;
   onCheckout: () => void;
+  checkoutLoading?: boolean;
+  isSignedIn: boolean;
 }
 
 export default function CartDrawer({
@@ -22,12 +25,13 @@ export default function CartDrawer({
   onAdjustQty,
   onRemoveItem,
   onCheckout,
-}: CartDrawerProps) {
+  checkoutLoading,
+  isSignedIn,
+}: Props) {
   return (
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden">
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.5 }}
@@ -36,7 +40,6 @@ export default function CartDrawer({
             className="absolute inset-0 bg-black/60"
           />
 
-          {/* Drawer */}
           <div className="fixed inset-y-0 right-0 max-w-full flex">
             <motion.div
               initial={{ x: '100%' }}
@@ -59,7 +62,6 @@ export default function CartDrawer({
                   </button>
                 </div>
 
-                {/* Items */}
                 <div className="space-y-6 overflow-y-auto max-h-[55vh] pr-2">
                   {cart.length === 0 ? (
                     <div className="text-center py-20 opacity-45 space-y-4">
@@ -81,6 +83,7 @@ export default function CartDrawer({
                           src={item.image}
                           alt={item.name}
                           className="w-18 h-18 rounded-[16px] object-cover border-2 border-[#C41E3A]/20"
+                          loading="lazy"
                           referrerPolicy="no-referrer"
                         />
                         <div className="flex-1 space-y-1">
@@ -115,9 +118,7 @@ export default function CartDrawer({
                               >
                                 <Minus className="w-3 h-3" />
                               </button>
-                              <span className="font-black text-xs text-[#C41E3A]">
-                                {item.qty}
-                              </span>
+                              <span className="font-black text-xs text-[#C41E3A]">{item.qty}</span>
                               <button
                                 onClick={() => onAdjustQty(idx, 1)}
                                 className="w-5 h-5 flex items-center justify-center rounded hover:bg-[#C41E3A] hover:text-white transition-colors cursor-pointer"
@@ -136,7 +137,7 @@ export default function CartDrawer({
                 </div>
               </div>
 
-              {/* Footer: subtotal + checkout */}
+              {/* Footer: subtotal + checkout / sign-in gate */}
               <div className="pt-6 border-t-2 border-[#C41E3A]/10 space-y-4 text-left">
                 <div className="flex justify-between items-end">
                   <span className="font-retro text-2xl text-[#C41E3A] tracking-wider uppercase">
@@ -147,14 +148,25 @@ export default function CartDrawer({
                   </span>
                 </div>
 
-                {cart.length > 0 ? (
+                {cart.length > 0 && !isSignedIn && (
+                  <SignInButton mode="modal">
+                    <button className="w-full bg-[#FFB81C] text-[#C41E3A] font-black py-4 rounded-2xl text-lg uppercase tracking-widest shadow-lg border-2 border-[#C41E3A] hover:bg-[#ffa71c] cursor-pointer">
+                      Sign In to Checkout
+                    </button>
+                  </SignInButton>
+                )}
+
+                {cart.length > 0 && isSignedIn && (
                   <button
                     onClick={onCheckout}
-                    className="w-full btn-hover bg-[#FFB81C] text-[#C41E3A] font-black py-4 rounded-2xl text-lg uppercase tracking-widest shadow-lg border-2 border-[#C41E3A] hover:bg-[#ffa71c] cursor-pointer"
+                    disabled={checkoutLoading}
+                    className="w-full bg-[#FFB81C] text-[#C41E3A] font-black py-4 rounded-2xl text-lg uppercase tracking-widest shadow-lg border-2 border-[#C41E3A] hover:bg-[#ffa71c] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                   >
-                    Checkout Now
+                    {checkoutLoading ? 'Locking In...' : 'Checkout Now'}
                   </button>
-                ) : (
+                )}
+
+                {cart.length === 0 && (
                   <button
                     disabled
                     className="w-full bg-[#FDF5E6] text-stone-400 border-2 border-stone-200 py-4 rounded-2xl text-lg uppercase tracking-widest cursor-not-allowed text-center"

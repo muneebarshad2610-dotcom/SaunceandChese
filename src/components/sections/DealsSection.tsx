@@ -1,18 +1,16 @@
 import { motion } from 'motion/react';
 import type { MenuItem } from '../../types';
 import DealCard from '../ui/DealCard';
+import SkeletonCard from '../ui/SkeletonCard';
 
-interface DealsSectionProps {
+interface Props {
   items: MenuItem[];
+  loading: boolean;
   onQuickView: (item: MenuItem) => void;
   onQuickAdd: (item: MenuItem) => void;
 }
 
-export default function DealsSection({
-  items,
-  onQuickView,
-  onQuickAdd,
-}: DealsSectionProps) {
+export default function DealsSection({ items, loading, onQuickView, onQuickAdd }: Props) {
   const deals = items.filter((item) => item.category === 'deal');
 
   return (
@@ -31,13 +29,23 @@ export default function DealsSection({
             Hot Deals
           </h2>
           <p className="font-handwritten text-2xl md:text-3xl text-[#FFB81C] leading-none">
-            The ultimate combo deals, hand-crafted to satisfy your late night
-            cravings.
+            The ultimate combo deals, hand-crafted to satisfy your late night cravings.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12">
-          {deals.length === 0 ? (
+          {loading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <motion.div
+                key={`deal-skeleton-${i}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: i * 0.05 }}
+              >
+                <SkeletonCard />
+              </motion.div>
+            ))
+          ) : deals.length === 0 ? (
             <div className="col-span-full py-16 px-6 text-center bg-white border-4 border-[#C41E3A] rounded-[36px] max-w-lg mx-auto shadow-md w-full">
               <p className="font-retro text-3xl md:text-4xl text-[#C41E3A] uppercase tracking-wide mb-3">
                 New Deals Preparing!
@@ -56,11 +64,7 @@ export default function DealsSection({
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: index * 0.05 }}
               >
-                <DealCard
-                  item={item}
-                  onQuickView={onQuickView}
-                  onQuickAdd={onQuickAdd}
-                />
+                <DealCard item={item} onQuickView={onQuickView} onQuickAdd={onQuickAdd} />
               </motion.div>
             ))
           )}

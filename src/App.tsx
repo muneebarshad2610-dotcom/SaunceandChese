@@ -1,4 +1,6 @@
 import { useState, useCallback } from 'react';
+import { useAuth } from '@clerk/react';
+import ErrorBoundary from './components/ErrorBoundary';
 import Navbar from './components/layout/Navbar';
 import Hero from './components/sections/Hero';
 import StorySection from './components/sections/StorySection';
@@ -14,7 +16,11 @@ import { useCart } from './hooks/useCart';
 import { useMenuItems } from './hooks/useMenuItems';
 import type { MenuItem, OrderDetails } from './types';
 
+const API_BASE = import.meta.env.VITE_API_URL ?? '';
+
 export default function App() {
+  const { isSignedIn, getToken } = useAuth();
+
   // Menu data
   const { menuItems, loading, error } = useMenuItems();
 
@@ -35,6 +41,7 @@ export default function App() {
   const [quickViewItem, setQuickViewItem] = useState<MenuItem | null>(null);
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
   const [lastOrderDetails, setLastOrderDetails] = useState<OrderDetails | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   // Handlers
   const openQuickView = useCallback((item: MenuItem) => {
@@ -49,8 +56,31 @@ export default function App() {
     [quickAddToCart]
   );
 
-  const handleCheckout = useCallback(() => {
+  const handleCheckout = useCallback(async () => {
+    // Must be signed in
+    if (!isSignedIn) return;
+
+    setCheckoutLoading(true);
     const orderId = 'SNC-' + Math.floor(100000 + Math.random() * 900000);
+
+    try {
+      const token = await getToken();
+      await fetch(`${API_BASE}/api/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          orderNumber: orderId,
+          items: cart,
+          subtotal: cartSubtotal,
+        }),
+      });
+    } catch (err) {
+      console.error('Order submission failed (proceeding anyway):', err);
+    }
+
     setLastOrderDetails({
       id: orderId,
       total: cartSubtotal,
@@ -59,81 +89,103 @@ export default function App() {
     setShowOrderSuccess(true);
     clearCart();
     setIsCartOpen(false);
-  }, [cartSubtotal, cartItemCount, clearCart]);
+    setCheckoutLoading(false);
+  }, [isSignedIn, getToken, cart, cartSubtotal, cartItemCount, clearCart]);
 
   const handleContactSubmit = useCallback(
     async (data: { name: string; email: string; message: string }) => {
-      const API_BASE = import.meta.env.VITE_API_URL ?? '';
       const res = await fetch(`${API_BASE}/api/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error('Failed to submit contact form');
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error((errBody as { error?: string }).error ?? 'Failed to submit contact form');
+      }
     },
     []
   );
 
   return (
-    <div className="min-h-screen bg-[#FDF5E6] text-[#1A1A1A] font-sans selection:bg-[#FFB81C] selection:text-[#C41E3A] overflow-x-hidden flex flex-col">
-      <Navbar cartItemCount={cartItemCount} onCartOpen={() => setIsCartOpen(true)} />
+    <ErrorBoundary>
+      <div className="min-h-screen bg-[#FDF5E6] text-[#1A1A1A] font-sans selection:bg-[#FFB81C] selection:text-[#C41E3A] overflow-x-hidden flex flex-col">
+        <Navbar cartItemCount={cartItemCount} onCartOpen={() => setIsCartOpen(true)} />
 
-      <main className="flex-1">
-        <Hero />
-        <StorySection />
+        <main className="flex-1">
+          <Hero />
+          <StorySection />
 
-        {error ? (
-          <section className="py-20 px-6 text-center">
-            <p className="font-retro text-3xl text-[#C41E3A]">Failed to load menu: {error}</p>
-            <p className="text-sm text-[#C41E3A]/70 mt-2">Please try again later.</p>
-          </section>
-        ) : (
-          <>
-            <MenuSection
-              items={menuItems}
-              onQuickView={openQuickView}
-              onQuickAdd={handleQuickAdd}
-            />
-            <DealsSection
-              items={menuItems}
-              onQuickView={openQuickView}
-              onQuickAdd={handleQuickAdd}
-            />
-          </>
-        )}
+          {error ? (
+            <section className="py-20 px-6 text-center">
+              <div className="max-w-lg mx-auto bg-white border-4 border-[#C41E3A] rounded-[36px] p-10 shadow-md">
+                <p className="font-retro text-3xl text-[#C41E3A] uppercase tracking-wide mb-3">
+                  🚫 Couldn't Reach the Kitchen
+                </p>
+                <p className="text-sm text-[#C41E3A]/70 leading-relaxed">
+                  Our menu server is taking a break. Please check your connection and try
+                  again later. We're still gooey at heart.
+                </p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="mt-6 bg-[#C41E3A] text-white px-8 py-3 rounded-full font-black uppercase tracking-wider text-xs hover:brightness-110 transition-all cursor-pointer"
+                >
+                  Retry Connection
+                </button>
+              </div>
+            </section>
+          ) : (
+            <>
+              <MenuSection
+                items={menuItems}
+                loading={loading}
+                onQuickView={openQuickView}
+                onQuickAdd={handleQuickAdd}
+              />
+              <DealsSection
+                items={menuItems}
+                loading={loading}
+                onQuickView={openQuickView}
+                onQuickAdd={handleQuickAdd}
+              />
+            </>
+          )}
 
-        <InstagramMarquee />
-        <LocationsSection onSubmitContact={handleContactSubmit} />
-      </main>
+          <InstagramMarquee />
+          <LocationsSection onSubmitContact={handleContactSubmit} />
+        </main>
 
-      <Footer />
+        <Footer />
 
-      {/* Modals */}
-      <QuickViewModal
-        item={quickViewItem}
-        onClose={() => setQuickViewItem(null)}
-        onAddToCart={(item, options) => {
-          addToCart(item, options);
-          setIsCartOpen(true);
-        }}
-      />
+        {/* Modals */}
+        <QuickViewModal
+          item={quickViewItem}
+          onClose={() => setQuickViewItem(null)}
+          onAddToCart={(item, options) => {
+            addToCart(item, options);
+            setIsCartOpen(true);
+          }}
+        />
 
-      <CartDrawer
-        isOpen={isCartOpen}
-        cart={cart}
-        cartItemCount={cartItemCount}
-        cartSubtotal={cartSubtotal}
-        onClose={() => setIsCartOpen(false)}
-        onAdjustQty={adjustQty}
-        onRemoveItem={removeItem}
-        onCheckout={handleCheckout}
-      />
+        <CartDrawer
+          isOpen={isCartOpen}
+          cart={cart}
+          cartItemCount={cartItemCount}
+          cartSubtotal={cartSubtotal}
+          onClose={() => setIsCartOpen(false)}
+          onAdjustQty={adjustQty}
+          onRemoveItem={removeItem}
+          onCheckout={handleCheckout}
+          checkoutLoading={checkoutLoading}
+          isSignedIn={!!isSignedIn}
+        />
 
-      <OrderSuccessModal
-        isOpen={showOrderSuccess}
-        orderDetails={lastOrderDetails}
-        onClose={() => setShowOrderSuccess(false)}
-      />
-    </div>
+        <OrderSuccessModal
+          isOpen={showOrderSuccess}
+          orderDetails={lastOrderDetails}
+          onClose={() => setShowOrderSuccess(false)}
+        />
+      </div>
+    </ErrorBoundary>
   );
 }

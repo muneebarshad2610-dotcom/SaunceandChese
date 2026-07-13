@@ -11,9 +11,7 @@ export default function Hero() {
 
         <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black leading-none text-[#C41E3A] uppercase font-retro">
           The Ultimate<br />
-          <span className="text-[#FFB81C] text-7xl sm:text-8xl lg:text-9xl">
-            Gooey
-          </span>
+          <span className="text-[#FFB81C] text-7xl sm:text-8xl lg:text-9xl">Gooey</span>
           <br />
           Escape
         </h1>

@@ -2,12 +2,7 @@ import { useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { MenuItem } from '../../types';
 import MenuCard from '../ui/MenuCard';
-
-interface MenuSectionProps {
-  items: MenuItem[];
-  onQuickView: (item: MenuItem) => void;
-  onQuickAdd: (item: MenuItem) => void;
-}
+import SkeletonCard from '../ui/SkeletonCard';
 
 const TABS = [
   { id: 'all', label: 'All Cravings' },
@@ -15,11 +10,14 @@ const TABS = [
   { id: 'special', label: 'Special Flavours' },
 ] as const;
 
-export default function MenuSection({
-  items,
-  onQuickView,
-  onQuickAdd,
-}: MenuSectionProps) {
+interface Props {
+  items: MenuItem[];
+  loading: boolean;
+  onQuickView: (item: MenuItem) => void;
+  onQuickAdd: (item: MenuItem) => void;
+}
+
+export default function MenuSection({ items, loading, onQuickView, onQuickAdd }: Props) {
   const [activeFilter, setActiveFilter] = useState<string>('all');
 
   const filteredItems = useMemo(() => {
@@ -29,10 +27,7 @@ export default function MenuSection({
   }, [items, activeFilter]);
 
   return (
-    <section
-      id="menu"
-      className="py-20 px-6 md:px-12 bg-white/40 max-w-7xl mx-auto"
-    >
+    <section id="menu" className="py-20 px-6 md:px-12 bg-white/40 max-w-7xl mx-auto">
       <div className="text-center mb-12">
         <h2 className="font-retro text-6xl md:text-7xl text-[#C41E3A] uppercase tracking-wider mb-2">
           Retro Favorites
@@ -42,7 +37,6 @@ export default function MenuSection({
         </p>
       </div>
 
-      {/* Filter tabs */}
       <div className="flex flex-wrap justify-center gap-3 mb-16">
         {TABS.map((tab) => {
           const isActive = activeFilter === tab.id;
@@ -62,10 +56,20 @@ export default function MenuSection({
         })}
       </div>
 
-      {/* Card grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12">
         <AnimatePresence mode="popLayout">
-          {filteredItems.length === 0 ? (
+          {loading ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <motion.div
+                key={`skeleton-${i}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: i * 0.05 }}
+              >
+                <SkeletonCard />
+              </motion.div>
+            ))
+          ) : filteredItems.length === 0 ? (
             <motion.div
               key="no-items"
               initial={{ opacity: 0, y: 10 }}
@@ -91,11 +95,7 @@ export default function MenuSection({
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.4, delay: index * 0.05 }}
               >
-                <MenuCard
-                  item={item}
-                  onQuickView={onQuickView}
-                  onQuickAdd={onQuickAdd}
-                />
+                <MenuCard item={item} onQuickView={onQuickView} onQuickAdd={onQuickAdd} />
               </motion.div>
             ))
           )}

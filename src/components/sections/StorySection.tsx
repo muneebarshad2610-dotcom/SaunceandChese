@@ -7,19 +7,18 @@ export default function StorySection() {
       className="py-20 px-6 md:px-12 bg-[#F5DEB3]/30 border-y-4 border-dashed border-[#C41E3A]/20"
     >
       <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-12 md:gap-16 items-center">
-        {/* Image */}
         <div className="w-full md:w-1/2 flex justify-center">
           <div className="relative p-2 border-4 border-[#FFB81C] rounded-full overflow-hidden w-64 h-64 md:w-80 md:h-80">
             <img
               src="https://images.unsplash.com/photo-1543339308-43e59d6b73a6?q=80&w=600&auto=format&fit=crop"
               alt="Melty Old School Saucery"
               className="w-full h-full object-cover rounded-full"
+              loading="lazy"
               referrerPolicy="no-referrer"
             />
           </div>
         </div>
 
-        {/* Copy */}
         <div className="w-full md:w-1/2 space-y-6 text-left">
           <h2 className="font-retro text-5xl md:text-6xl text-[#C41E3A] uppercase tracking-wide">
             Our Saucy Story

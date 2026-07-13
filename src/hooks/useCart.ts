@@ -8,13 +8,12 @@ export function useCart() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) return JSON.parse(saved) as CartItem[];
-    } catch (e) {
-      console.error('Failed to load cart from localStorage', e);
+    } catch {
+      // ignore parse errors
     }
     return [];
   });
 
-  // Persist cart to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
   }, [cart]);
@@ -29,8 +28,6 @@ export function useCart() {
     [cart]
   );
 
-  const itemsInCartCount = useMemo(() => cart.length, [cart]);
-
   const addToCart = useCallback(
     (item: MenuItem, options: AddToCartOptions) => {
       const itemPrice = item.prices
@@ -39,15 +36,15 @@ export function useCart() {
 
       const size = item.prices ? options.size : undefined;
 
-      const existingIndex = cart.findIndex(
-        (c) =>
-          c.id === item.id &&
-          c.selectedSize === size &&
-          c.customCheese === options.cheeseLevel &&
-          c.customSauceType === options.sauceType
-      );
-
       setCart((prev) => {
+        const existingIndex = prev.findIndex(
+          (c) =>
+            c.id === item.id &&
+            c.selectedSize === size &&
+            c.customCheese === options.cheeseLevel &&
+            c.customSauceType === options.sauceType
+        );
+
         const next = [...prev];
         if (existingIndex > -1) {
           next[existingIndex] = {
@@ -69,7 +66,7 @@ export function useCart() {
         return next;
       });
     },
-    [cart]
+    []
   );
 
   const quickAddToCart = useCallback(
@@ -113,7 +110,6 @@ export function useCart() {
     cart,
     cartItemCount,
     cartSubtotal,
-    itemsInCartCount,
     addToCart,
     quickAddToCart,
     adjustQty,

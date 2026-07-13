@@ -17,20 +17,21 @@ CREATE TABLE IF NOT EXISTS menu_items (
   updated_at    TIMESTAMP DEFAULT NOW()
 );
 
--- Contact form submissions
+-- Contact form submissions (linked to Clerk user if signed in)
 CREATE TABLE IF NOT EXISTS contacts (
   id         SERIAL PRIMARY KEY,
   name       VARCHAR(255) NOT NULL,
   email      VARCHAR(255) NOT NULL,
   message    TEXT,
+  clerk_user_id VARCHAR(255),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Orders (for future checkout integration)
+-- Orders (linked to Clerk user)
 CREATE TABLE IF NOT EXISTS orders (
   id            SERIAL PRIMARY KEY,
   order_number  VARCHAR(50) UNIQUE NOT NULL,
-  clerk_user_id VARCHAR(255),
+  clerk_user_id VARCHAR(255) NOT NULL,
   items         JSONB NOT NULL DEFAULT '[]',
   subtotal      NUMERIC(10, 2) NOT NULL,
   status        VARCHAR(50) DEFAULT 'confirmed',
@@ -40,3 +41,4 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE INDEX IF NOT EXISTS idx_menu_items_category ON menu_items (category);
 CREATE INDEX IF NOT EXISTS idx_contacts_created_at ON contacts (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_orders_clerk_user ON orders (clerk_user_id);
+CREATE INDEX IF NOT EXISTS idx_contacts_clerk_user ON contacts (clerk_user_id);

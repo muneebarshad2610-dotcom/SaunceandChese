@@ -1,25 +1,19 @@
 import { Sliders, Plus } from 'lucide-react';
 import type { MenuItem } from '../../types';
 
-interface DealCardProps {
+interface Props {
   item: MenuItem;
   onQuickView: (item: MenuItem) => void;
   onQuickAdd: (item: MenuItem) => void;
 }
 
-export default function DealCard({
-  item,
-  onQuickView,
-  onQuickAdd,
-}: DealCardProps) {
+export default function DealCard({ item, onQuickView, onQuickAdd }: Props) {
   return (
     <div className="bg-white border-4 border-[#C41E3A] rounded-[36px] p-6 md:p-8 flex flex-col items-center relative hover:-translate-y-2 transition-transform duration-300 shadow-md hover:shadow-xl text-center">
-      {/* Combo tag */}
       <div className="absolute -top-4 -right-2 bg-[#C41E3A] text-white px-4 py-1.5 rounded-xl font-retro text-xs uppercase tracking-widest border-2 border-white rotate-6 shadow-md z-10">
         Combo Bundle
       </div>
 
-      {/* Image with hover overlay */}
       <div
         onClick={() => onQuickView(item)}
         className="w-full aspect-square overflow-hidden rounded-[24px] mb-6 border-2 border-[#C41E3A] cursor-pointer group relative"
@@ -28,6 +22,7 @@ export default function DealCard({
           src={item.image}
           alt={item.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          loading="lazy"
           referrerPolicy="no-referrer"
         />
         <div className="absolute inset-0 bg-[#C41E3A]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">

@@ -1,21 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Flame, X, Plus, Minus } from 'lucide-react';
 import type { MenuItem } from '../../types';
-
-interface QuickViewModalProps {
-  item: MenuItem | null;
-  onClose: () => void;
-  onAddToCart: (
-    item: MenuItem,
-    options: {
-      qty: number;
-      size?: 'small' | 'regular' | 'large';
-      cheeseLevel: number;
-      sauceType: string;
-    }
-  ) => void;
-}
 
 const SAUCE_OPTIONS = [
   'Liquid Gold',
@@ -24,19 +10,26 @@ const SAUCE_OPTIONS = [
   'Ghost Pepper Glaze',
 ] as const;
 
-export default function QuickViewModal({
-  item,
-  onClose,
-  onAddToCart,
-}: QuickViewModalProps) {
+interface Props {
+  item: MenuItem | null;
+  onClose: () => void;
+  onAddToCart: (
+    item: MenuItem,
+    options: { qty: number; size?: 'small' | 'regular' | 'large'; cheeseLevel: number; sauceType: string }
+  ) => void;
+}
+
+export default function QuickViewModal({ item, onClose, onAddToCart }: Props) {
   const [qty, setQty] = useState(1);
   const [selectedSize, setSelectedSize] = useState<'small' | 'regular' | 'large'>('small');
   const [cheeseLevel, setCheeseLevel] = useState(4);
-  const [sauceType, setSauceType] = useState<string>('Liquid Gold');
+  const [sauceType, setSauceType] = useState('Liquid Gold');
   const [isDragging, setIsDragging] = useState(false);
   const [pullHeight, setPullHeight] = useState(80);
 
-  // Reset customization state when a different item is opened
+  // Stable ref for tracking pointer position across renders during drag
+  const lastPointerY = useRef(0);
+
   useEffect(() => {
     if (!item) return;
     setQty(1);
@@ -47,36 +40,37 @@ export default function QuickViewModal({
     setSauceType(item.baseSauce ?? 'Liquid Gold');
   }, [item?.id]);
 
-  const handleCheeseDrag = (_: any, info: any) => {
-    const deltaY = -info.offset.y;
-    setPullHeight((prev) => Math.max(15, Math.min(180, prev + deltaY)));
-    const level = Math.max(1, Math.min(5, Math.round((pullHeight + deltaY) / 36)));
-    setCheeseLevel(level);
-  };
-
-  const handleAdd = () => {
-    if (!item) return;
-    onAddToCart(item, {
-      qty,
-      size: item.prices ? selectedSize : undefined,
-      cheeseLevel,
-      sauceType,
-    });
-    onClose();
-  };
-
-  // Derive current price for display
   const currentPrice = item
     ? item.prices
       ? item.prices[selectedSize]
       : item.price
     : 0;
 
+  const handleCheeseDrag = (_: any, info: any) => {
+    const pointerY = info.point.y;
+    if (lastPointerY.current === 0) {
+      lastPointerY.current = pointerY;
+    }
+    const deltaY = -(pointerY - lastPointerY.current);
+    lastPointerY.current = pointerY;
+
+    setPullHeight((prev) => {
+      const next = Math.max(15, Math.min(180, prev + deltaY));
+      setCheeseLevel(Math.max(1, Math.min(5, Math.round(next / 36))));
+      return next;
+    });
+  };
+
+  const handleAdd = () => {
+    if (!item) return;
+    onAddToCart(item, { qty, size: item.prices ? selectedSize : undefined, cheeseLevel, sauceType });
+    onClose();
+  };
+
   return (
     <AnimatePresence>
       {item && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -85,7 +79,6 @@ export default function QuickViewModal({
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
           />
 
-          {/* Modal */}
           <motion.div
             key={item.id}
             initial={{ scale: 0.9, y: 20, opacity: 0 }}
@@ -94,7 +87,6 @@ export default function QuickViewModal({
             transition={{ type: 'spring', damping: 25 }}
             className="relative bg-[#FDF5E6] border-4 border-[#C41E3A] rounded-[40px] max-w-3xl w-full max-h-[92vh] overflow-y-auto flex flex-col md:flex-row shadow-2xl z-10"
           >
-            {/* Close */}
             <button
               onClick={onClose}
               className="absolute top-4 right-4 z-20 w-11 h-11 bg-white rounded-full flex items-center justify-center shadow-lg border-2 border-[#C41E3A] hover:scale-105 transition-transform cursor-pointer"
@@ -106,18 +98,12 @@ export default function QuickViewModal({
             <div className="w-full md:w-1/2 bg-[#FDF5E6] border-r-0 md:border-r-4 border-b-4 md:border-b-0 border-[#C41E3A] relative flex flex-col justify-between overflow-hidden">
               <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-white/80 border-2 border-[#C41E3A] px-3 py-1 rounded-full z-10 shadow-sm">
                 <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-ping" />
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#C41E3A]">
-                  Sensory Pull
-                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#C41E3A]">Sensory Pull</span>
               </div>
 
-              {/* Visualizer */}
               <div className="h-72 md:h-96 flex flex-col items-center justify-center relative mt-4">
-                {/* Plate */}
                 <div className="absolute w-52 h-52 rounded-full bg-[#1A1A1A] border-4 border-[#C41E3A] shadow-xl flex items-center justify-center">
-                  {/* Crust */}
                   <div className="w-48 h-48 rounded-full bg-gradient-to-br from-amber-600 via-[#FFB81C] to-orange-500 border-2 border-orange-700 flex items-center justify-center shadow-inner overflow-hidden">
-                    {/* Sauce pool */}
                     <div
                       className="w-40 h-40 rounded-full transition-all duration-300 flex items-center justify-center relative"
                       style={{
@@ -140,7 +126,6 @@ export default function QuickViewModal({
                   </div>
                 </div>
 
-                {/* Cheese pull SVG */}
                 <div className="absolute bottom-28 flex flex-col items-center z-10">
                   <svg width="220" height="200" className="pointer-events-none overflow-visible">
                     <defs>
@@ -156,30 +141,32 @@ export default function QuickViewModal({
                       fill="none"
                       stroke="url(#cheeseGrad)"
                       strokeWidth={Math.max(2.5, 9 - pullHeight / 15)}
-                      className="transition-all duration-100"
                     />
                     <path
                       d={`M 85 142 Q 100 ${142 - pullHeight * 0.4}, 100 ${140 - pullHeight} Q 110 ${142 - pullHeight * 0.4}, 125 142 Z`}
                       fill="url(#cheeseGrad)"
                       opacity={0.9}
-                      className="transition-all duration-100"
                     />
                     <path
                       d={`M 150 140 Q ${140 + pullHeight * 0.1} ${140 - pullHeight * 0.5}, 125 ${140 - pullHeight}`}
                       fill="none"
                       stroke="url(#cheeseGrad)"
                       strokeWidth={Math.max(2, 7 - pullHeight / 20)}
-                      className="transition-all duration-100"
                     />
                   </svg>
 
-                  {/* Drag handle */}
                   <motion.div
                     style={{ y: -pullHeight }}
                     className="absolute bg-[#1A1A1A] border-2 border-[#FFB81C] px-4 py-2 rounded-full shadow-lg flex items-center gap-1.5 cursor-grab hover:border-white select-none active:cursor-grabbing group"
                     onPan={handleCheeseDrag}
-                    onPanStart={() => setIsDragging(true)}
-                    onPanEnd={() => setIsDragging(false)}
+                    onPanStart={() => {
+                      setIsDragging(true);
+                      lastPointerY.current = 0;
+                    }}
+                    onPanEnd={() => {
+                      setIsDragging(false);
+                      lastPointerY.current = 0;
+                    }}
                   >
                     <Flame className="w-4 h-4 text-[#FFB81C] animate-pulse" />
                     <span className="text-[10px] font-black text-white uppercase tracking-widest font-retro">
@@ -190,8 +177,7 @@ export default function QuickViewModal({
               </div>
 
               <div className="bg-[#C41E3A] text-white py-2 text-center text-[10px] font-black uppercase tracking-widest font-retro border-t-2 border-[#C41E3A]">
-                Stretch Factor: {Math.round(pullHeight / 1.8)}% &bull;{' '}
-                {cheeseLevel * 1.5}oz Curd Melt
+                Stretch Factor: {Math.round(pullHeight / 1.8)}% &bull; {cheeseLevel * 1.5}oz Curd Melt
               </div>
             </div>
 
@@ -202,9 +188,7 @@ export default function QuickViewModal({
                   <h2 className="font-retro text-4xl sm:text-5xl text-[#C41E3A] uppercase tracking-wide">
                     {item.name}
                   </h2>
-                  <p className="text-sm text-[#C41E3A]/70 leading-relaxed mt-1">
-                    {item.description}
-                  </p>
+                  <p className="text-sm text-[#C41E3A]/70 leading-relaxed mt-1">{item.description}</p>
                 </div>
 
                 <div className="flex items-center gap-2 text-3xl font-black text-[#FFB81C] font-retro tracking-wider">
@@ -212,7 +196,6 @@ export default function QuickViewModal({
                 </div>
 
                 <div className="space-y-4 pt-2 border-t border-[#C41E3A]/10">
-                  {/* Size selector */}
                   {item.prices && (
                     <div className="space-y-2">
                       <label className="font-black uppercase text-[10px] tracking-widest text-[#C41E3A]/50 block">
@@ -236,13 +219,10 @@ export default function QuickViewModal({
                     </div>
                   )}
 
-                  {/* Cheese level */}
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-[11px] font-black uppercase text-[#C41E3A]/50">
                       <span>Cheese Pull Quantity</span>
-                      <span className="text-[#C41E3A] font-black font-mono">
-                        x{cheeseLevel}
-                      </span>
+                      <span className="text-[#C41E3A] font-black font-mono">x{cheeseLevel}</span>
                     </div>
                     <input
                       type="range"
@@ -258,7 +238,6 @@ export default function QuickViewModal({
                     />
                   </div>
 
-                  {/* Sauce */}
                   <div className="space-y-2">
                     <label className="font-black uppercase text-[10px] tracking-widest text-[#C41E3A]/50 block">
                       Sauce Drizzle Infusion
@@ -280,7 +259,6 @@ export default function QuickViewModal({
                     </div>
                   </div>
 
-                  {/* Quantity */}
                   <div className="space-y-2 pt-1">
                     <label className="font-black uppercase text-[10px] tracking-widest text-[#C41E3A]/50 block">
                       Quantity
@@ -292,9 +270,7 @@ export default function QuickViewModal({
                       >
                         <Minus className="w-4 h-4" />
                       </button>
-                      <span className="w-6 text-center font-black text-sm">
-                        {qty}
-                      </span>
+                      <span className="w-6 text-center font-black text-sm">{qty}</span>
                       <button
                         onClick={() => setQty((p) => p + 1)}
                         className="w-8 h-8 flex items-center justify-center hover:bg-[#C41E3A] hover:text-white rounded-xl transition-colors cursor-pointer"
@@ -308,7 +284,7 @@ export default function QuickViewModal({
 
               <button
                 onClick={handleAdd}
-                className="w-full btn-hover bg-[#FFB81C] text-[#C41E3A] font-black py-4.5 rounded-full uppercase tracking-widest text-base shadow-lg border-2 border-[#C41E3A] hover:bg-[#ffa71c] cursor-pointer mt-4"
+                className="w-full bg-[#FFB81C] text-[#C41E3A] font-black py-4.5 rounded-full uppercase tracking-widest text-base shadow-lg border-2 border-[#C41E3A] hover:bg-[#ffa71c] cursor-pointer mt-4"
               >
                 Add To Cravings Basket
               </button>

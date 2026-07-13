@@ -11,7 +11,7 @@ const MARQUEE_IMAGES = [
 
 function MarqueeTrack({ id }: { id: string }) {
   return (
-    <div className={`animate-marquee flex gap-6 pr-6`} aria-hidden={id === 'dup'}>
+    <div className="animate-marquee flex gap-6 pr-6" aria-hidden={id === 'dup'}>
       {MARQUEE_IMAGES.map((src, i) => (
         <div
           key={`${id}-${i}`}
@@ -21,6 +21,7 @@ function MarqueeTrack({ id }: { id: string }) {
             src={src}
             alt="Cheese pull"
             className="w-full h-full object-cover"
+            loading="lazy"
             referrerPolicy="no-referrer"
           />
         </div>

@@ -1,20 +1,15 @@
 import { Sliders, Plus } from 'lucide-react';
 import type { MenuItem } from '../../types';
 
-interface MenuCardProps {
+interface Props {
   item: MenuItem;
   onQuickView: (item: MenuItem) => void;
   onQuickAdd: (item: MenuItem) => void;
 }
 
-export default function MenuCard({
-  item,
-  onQuickView,
-  onQuickAdd,
-}: MenuCardProps) {
+export default function MenuCard({ item, onQuickView, onQuickAdd }: Props) {
   return (
     <div className="bg-white border-4 border-[#C41E3A] rounded-[36px] p-6 md:p-8 flex flex-col items-center text-center relative hover:-translate-y-2 transition-transform duration-300 shadow-md hover:shadow-xl">
-      {/* Card Image */}
       <div
         onClick={() => onQuickView(item)}
         className="w-full aspect-square overflow-hidden rounded-[24px] mb-6 border-2 border-[#C41E3A] cursor-pointer group"
@@ -23,6 +18,7 @@ export default function MenuCard({
           src={item.image}
           alt={item.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          loading="lazy"
           referrerPolicy="no-referrer"
         />
       </div>

@@ -10,7 +10,7 @@ export interface MenuItem {
   };
   description: string;
   image: string;
-  baseCheese?: number; // 1-5 scale
+  baseCheese?: number;
   baseSauce?: string;
 }
 
@@ -21,7 +21,7 @@ export interface CartItem {
   qty: number;
   selectedSize?: 'small' | 'regular' | 'large';
   image: string;
-  customCheese: number; // 1-5
+  customCheese: number;
   customSauceType: string;
 }
 

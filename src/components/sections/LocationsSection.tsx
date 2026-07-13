@@ -2,28 +2,24 @@ import { useState, FormEvent } from 'react';
 import { MapPin, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-interface LocationsSectionProps {
-  onSubmitContact: (data: {
-    name: string;
-    email: string;
-    message: string;
-  }) => Promise<void>;
+interface Props {
+  onSubmitContact: (data: { name: string; email: string; message: string }) => Promise<void>;
 }
 
-export default function LocationsSection({
-  onSubmitContact,
-}: LocationsSectionProps) {
+export default function LocationsSection({ onSubmitContact }: Props) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!name || !email) return;
 
     setSubmitting(true);
+    setSubmitError(null);
     try {
       await onSubmitContact({ name, email, message });
       setSuccess(true);
@@ -31,8 +27,11 @@ export default function LocationsSection({
       setEmail('');
       setMessage('');
       setTimeout(() => setSuccess(false), 4000);
-    } catch {
-      // error handled upstream
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : 'Something went wrong. Please try again.'
+      );
+      setTimeout(() => setSubmitError(null), 6000);
     } finally {
       setSubmitting(false);
     }
@@ -80,7 +79,6 @@ export default function LocationsSection({
             </div>
           </div>
 
-          {/* Testimonial */}
           <div className="bg-[#C41E3A]/5 p-6 md:p-8 rounded-[40px] border-4 border-dashed border-[#C41E3A]/20 shadow-inner">
             <p className="text-xl md:text-2xl text-[#C41E3A] font-medium leading-relaxed italic font-handwritten">
               &ldquo;The golden liquid gold cheese is unmatched. Best cheddar
@@ -152,6 +150,16 @@ export default function LocationsSection({
               <span className="text-xs font-bold uppercase tracking-wider text-green-700">
                 Saucery message received! We will drizzle you back shortly.
               </span>
+            </motion.div>
+          )}
+          {submitError && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="bg-red-50 border-2 border-red-400 p-4 rounded-2xl flex items-center gap-3 text-left"
+            >
+              <span className="text-xs font-bold text-red-700">{submitError}</span>
             </motion.div>
           )}
         </AnimatePresence>
