@@ -63,7 +63,7 @@ Sauce n' Cheese is a **single-page React application** that serves as a branded 
 
 - No real backend API or server
 - No database
-- No user authentication or accounts
+- **No user authentication or accounts** — Clerk is the planned provider (`@clerk/clerk-react`); not yet integrated
 - No payment processing
 - No real order submission or fulfillment
 - No contact form submission to any endpoint

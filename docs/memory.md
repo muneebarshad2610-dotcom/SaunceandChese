@@ -2,12 +2,26 @@
 
 ## [2026-07-13] — Reverse-engineered docs from existing codebase
 
-- **What was completed**: Full read-only audit of the Sauce n' Cheese codebase. Generated 7 documentation files (prd.md, architecture.md, rules.md, phases.md, memory.md, session.md, info.md) from actual source code analysis. No code was changed.
-- **Files touched**: docs/prd.md, docs/architecture.md, docs/rules.md, docs/phases.md, docs/memory.md, docs/session.md, docs/info.md
-- **Known issues / TODO**: The project is a frontend-only prototype with an empty menu (`MENU_ITEMS = []`), no backend, no database, no auth, no payments. The "checkout" is a client-side mockup. Unused dependencies include express, @google/genai, dotenv, and tsx. The single component (App.tsx) is ~1300 lines and should be split. The cheese-pull drag interaction has a position drift bug. Contact form submits to nowhere. See docs/phases.md for full roadmap.
+- **What was completed**: Full read-only audit. Generated 7 documentation files from actual source code analysis.
+- **Files touched**: All docs/ files
+- **Known issues**: Frontend-only prototype, empty menu, no backend, no auth, no payments.
 
 ## [2026-07-13] — Refactored monolithic App.tsx into modular component architecture
 
-- **What was completed**: Split the ~1300-line `App.tsx` into 14 focused components, 2 custom hooks, shared types file, and env type declarations. `App.tsx` is now a ~100-line orchestrator. Fixed `index.html` title. Fixed QuickViewModal state not resetting when switching items. Removed unused `Sliders` import from QuickViewModal.
-- **Files touched**: Created: `src/types/index.ts`, `src/hooks/useCart.ts`, `src/hooks/useMenuItems.ts`, `src/env.d.ts`, `src/components/layout/Navbar.tsx`, `src/components/layout/Footer.tsx`, `src/components/sections/Hero.tsx`, `src/components/sections/StorySection.tsx`, `src/components/sections/MenuSection.tsx`, `src/components/sections/DealsSection.tsx`, `src/components/sections/InstagramMarquee.tsx`, `src/components/sections/LocationsSection.tsx`, `src/components/modals/QuickViewModal.tsx`, `src/components/modals/CartDrawer.tsx`, `src/components/modals/OrderSuccessModal.tsx`, `src/components/ui/MenuCard.tsx`, `src/components/ui/DealCard.tsx`. Modified: `src/App.tsx` (rewritten), `docs/rules.md` (updated conventions), `docs/architecture.md` (updated structure)
-- **Known issues / TODO**: Phase 3 (contact form backend) and Phase 4 (real product data) still need to be done. Cheese-pull drag drift bug still present.
+- **What was completed**: Split ~1300-line App.tsx into 14 components, 2 hooks, shared types. Fixed index.html title, QuickViewModal state reset, removed dead code.
+- **Files touched**: All components/, hooks/, types/, App.tsx (rewritten), index.html, env.d.ts, docs/
+
+## [2026-07-13] — Built Express backend with PostgreSQL (Phase 3 + 4)
+
+- **What was completed**:
+  - Created Express server (server.ts) with auto-migration and seed on startup
+  - Connected to Railway PostgreSQL database via pg connection pool
+  - Created database schema (3 tables: menu_items, contacts, orders)
+  - Seeded 13 real menu items with proper categories, prices, sizes, descriptions, images
+  - GET /api/menu-items transforms DB rows to frontend MenuItem shape
+  - POST /api/contact saves submissions with server-side email validation
+  - CORS configurable via CORS_ORIGINS env var
+  - Updated package.json with server scripts (dev:server, dev:all with concurrently)
+  - Created .env with DATABASE_URL and VITE_API_URL (gitignored)
+- **Files touched**: server.ts (created), src/db/pool.ts (created), src/db/schema.sql (created), src/db/seed.sql (created), .env (created), .gitignore (updated), package.json (updated), docs/phases.md (updated), docs/architecture.md (updated)
+- **Known issues / TODO**: Cart operations / order submission API still needed. Cheese-pull drag drift unfixed. Clerk auth not yet implemented. Gemini API unused.

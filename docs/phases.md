@@ -23,27 +23,34 @@
 - [x] Cart persistence in localStorage
 - [x] Order success modal with mock receipt and "Live Kitchen Tracker"
 
-## Phase 3: Contact & Feedback [Partial]
+## Phase 3: Contact & Feedback [Done]
 
 - [x] Contact form UI (name, email, message fields)
 - [x] Client-side validation and success toast
-- [ ] **Backend submission** — form data is discarded; no API endpoint exists
-- [ ] **Email notification or CRM integration** for contact form submissions
+- [x] **Backend submission** — POST /api/contact saves to PostgreSQL contacts table
+- [x] **Server-side validation** — email regex, name/email required checks
+- [ ] **Email notification or CRM integration** — entries are stored in DB but not forwarded
 
-## Phase 4: Real Product Data [Not Started — Critical Gap]
+## Phase 4: Real Product Data [Done]
 
-- [ ] **Populate `MENU_ITEMS` with actual products** — currently empty; entire menu is unusable
-- [ ] Add images for each item (replace Unsplash placeholders)
-- [ ] Set real prices, descriptions, categories
-- [ ] Determine which items have size variants (prices with small/regular/large) vs fixed price
+- [x] **Populate menu items with real products** — 13 items in PostgreSQL via seed.sql (5 classic, 5 special, 3 deals)
+- [x] Images assigned for each item (Unsplash food photography)
+- [x] Real prices, descriptions, categories set
+- [x] Size variants implemented for pizza items (small/regular/large with pricing)
+- [x] Items served via GET /api/menu-items endpoint
 
-## Phase 5: Backend Integration [Not Started]
+## Phase 5: Backend Integration [Done]
 
-- [ ] **Create a backend server** (Express is already in deps but unused)
-- [ ] **API endpoints** for menu items, cart operations, order submission
-- [ ] **Database** for products, orders, contacts (none exists)
-- [ ] **Gemini API integration** (@google/genai is in deps but unused — metadata declares `MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API`)
-- [ ] Environment variable wiring for `GEMINI_API_KEY` and `APP_URL` (defined in `.env.example` but never consumed in code)
+- [x] **Express server created** (server.ts) with auto-migration and seed on startup
+- [x] **API endpoints**: GET /api/menu-items, POST /api/contact, GET /api/health
+- [x] **PostgreSQL database connected** — hosted on Railway, connection via DATABASE_URL
+- [x] **Database schema** (3 tables: menu_items, contacts, orders) auto-applied on startup
+- [x] **CORS configured** — read from CORS_ORIGINS env var, dev fallback to localhost
+- [x] **Input validation** — email format regex, required field checks on contact form
+- [x] Environment variables managed via .env and dotenv
+- [ ] **Gemini API integration** — @google/genai is still unused
+- [ ] **Cart operations / order submission** API endpoints
+- [ ] Environment variable wiring for `APP_URL`
 
 ## Phase 6: Payments [Not Started]
 
@@ -53,9 +60,13 @@
 
 ## Phase 7: Auth & User Accounts [Not Started]
 
-- [ ] Login/signup system
-- [ ] Order history per user
-- [ ] Saved addresses and preferences
+- [ ] **Clerk integration** — install `@clerk/clerk-react`, wrap app with `<ClerkProvider>`, configure env vars (`VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`)
+- [ ] **Sign-in / Sign-up UI** — Clerk pre-built components or custom pages with `<SignIn />`, `<SignUp />`
+- [ ] **Protected routes** — wrap checkout, order history, and profile behind Clerk's `<Protect />` or route guards
+- [ ] **Backend session verification** — verify Clerk session tokens in Express middleware for API routes
+- [ ] **User profile page** — name, email, saved addresses, order history
+- [ ] **Order history per user** — store orders keyed to Clerk user ID
+- [ ] **Saved addresses and preferences** — per-user settings persisted to backend
 
 ## Phase 8: Polish & Quality [Not Started]
 

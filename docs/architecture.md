@@ -28,7 +28,32 @@
 
 ## Auth
 
-**None.** There is zero authentication in the codebase. No login/signup UI, no auth provider, no session management, no JWT, no OAuth. The app assumes a single anonymous user with no identity.
+**Not yet implemented — Clerk is the chosen provider.**
+
+There is currently zero authentication in the codebase. The plan is to integrate **Clerk** (https://clerk.com) for:
+- **Frontend**: `@clerk/clerk-react` with `<ClerkProvider>` wrapping the app, pre-built `<SignIn />` / `<SignUp />` components, and route guards via `<Protect />`
+- **Backend**: Clerk SDK session verification as Express middleware for protected API routes
+- **Env vars needed**: `VITE_CLERK_PUBLISHABLE_KEY` (frontend), `CLERK_SECRET_KEY` (backend)
+
+User accounts will enable order history, saved addresses, and preferences.
+
+---
+
+## Database
+
+**PostgreSQL** hosted on Railway (via `DATABASE_URL`). Connection managed by `pg` (node-postgres) connection pool in `src/db/pool.ts`.
+
+### Tables
+
+| Table | Purpose | Status |
+|-------|---------|--------|
+| `menu_items` | Product catalog (name, category, prices, description, image, modifiers) | Active — 13 seed items |
+| `contacts` | Contact form submissions (name, email, message) | Active |
+| `orders` | Order records (order_number, clerk_user_id, items JSONB, subtotal, status) | Schema exists, no write API yet |
+
+### Auto-migration
+
+On server startup, `server.ts` auto-runs `schema.sql` (idempotent `CREATE TABLE IF NOT EXISTS`) and `seed.sql` (inserts only if table is empty).
 
 ---
 
@@ -145,8 +170,12 @@ Found by grepping for `process.env` references:
 
 | Variable | Used In | Required | Default |
 |----------|---------|----------|---------|
-| `GEMINI_API_KEY` | `.env.example` only — not referenced in any code | Unclear | `MY_GEMINI_API_KEY` |
-| `APP_URL` | `.env.example` only — not referenced in any code | Unclear | `MY_APP_URL` |
+| `DATABASE_URL` | `server.ts`, `src/db/pool.ts` — PostgreSQL connection | Yes | `postgresql://...` |
+| `PORT` | `server.ts` — Express server port | No | `3001` |
+| `CORS_ORIGINS` | `server.ts` — Allowed CORS origins (comma-separated) | No | `http://localhost:3000,...` |
+| `VITE_API_URL` | Frontend `useMenuItems.ts`, `App.tsx` — API base URL | No | `http://localhost:3001` |
+| `GEMINI_API_KEY` | `.env.example` only | Unclear | `MY_GEMINI_API_KEY` |
+| `APP_URL` | `.env.example` only | Unclear | `MY_APP_URL` |
 | `DISABLE_HMR` | `vite.config.ts` — controls HMR / file watching | No | — |
 | `FORCE_COLOR` | `login-helper.cjs` — unrelated to main app | No | `0` |
 
