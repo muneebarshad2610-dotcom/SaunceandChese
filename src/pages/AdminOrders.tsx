@@ -135,6 +135,57 @@ export default function AdminOrders({ onNavigateHome }: Props) {
     }
   };
 
+  const printInvoice = (order: Order) => {
+    const win = window.open('', '_blank');
+    if (!win) { alert('Please allow popups to print invoices.'); return; }
+
+    const isTable = !!order.guestName;
+    const items = Array.isArray(order.items) ? order.items : [];
+
+    win.document.write(`
+      <html><head><title>Invoice ${order.orderNumber}</title>
+      <style>
+        body { font-family: 'Courier New', monospace; margin: 40px; color: #1A1A1A; }
+        .header { text-align: center; border-bottom: 2px dashed #C41E3A; padding-bottom: 20px; margin-bottom: 20px; }
+        .header h1 { font-size: 28px; margin: 0; color: #C41E3A; }
+        .header p { margin: 4px 0; font-size: 13px; color: #555; }
+        .meta { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 16px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { text-align: left; border-bottom: 2px solid #C41E3A; padding: 8px 4px; color: #C41E3A; }
+        td { padding: 8px 4px; border-bottom: 1px solid #ddd; }
+        .total { text-align: right; font-size: 18px; font-weight: bold; margin-top: 16px; color: #C41E3A; }
+        .footer { text-align: center; margin-top: 30px; font-size: 11px; color: #888; border-top: 1px dashed #ccc; padding-top: 16px; }
+        .qty { text-align: center; }
+        .price { text-align: right; }
+      </style></head><body>
+      <div class="header">
+        <h1>Sauce n' Cheese</h1>
+        <p>KAECHS Block 5, Karachi</p>
+        <p>0331-8025998</p>
+      </div>
+      <div class="meta">
+        <div><strong>Order:</strong> ${order.orderNumber}<br><strong>Date:</strong> ${new Date(order.createdAt).toLocaleString('en-GB')}</div>
+        <div>${isTable ? `<strong>Table:</strong> ${order.tableId} &mdash; ${order.guestName}` : `<strong>Customer:</strong> ${order.customerName}<br><strong>Phone:</strong> ${order.customerPhone}`}</div>
+      </div>
+      <table>
+        <tr><th>Item</th><th class="qty">Qty</th><th class="price">Price</th><th class="price">Total</th></tr>
+        ${items.map((i: any) => {
+          const unitPrice = i.unitPrice ?? i.price ?? 0;
+          const addons = i.addons?.map((a: any) => a.name).join(' + ') || '';
+          const name = i.name + (i.selectedSize ? ' (' + i.selectedSize + ')' : '') + (addons ? ' - ' + addons : '');
+          return `<tr><td>${name}</td><td class="qty">${i.qty}</td><td class="price">Rs. ${Number(unitPrice).toLocaleString()}</td><td class="price">Rs. ${(unitPrice * i.qty).toLocaleString()}</td></tr>`;
+        }).join('')}
+      </table>
+      <div class="total">Total: Rs. ${Number(order.subtotal).toLocaleString()}</div>
+      <div class="footer">
+        Thank you for dining with Sauce n' Cheese!<br>
+        Follow us on Instagram @saucencheese
+      </div>
+      <script>window.onload = function() { window.print(); };<\\/script>
+    </body></html>`);
+    win.document.close();
+  };
+
   // Filter & search
   const filteredOrders = orders.filter((order) => {
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
@@ -378,8 +429,14 @@ export default function AdminOrders({ onNavigateHome }: Props) {
                                 </button>
                               );
                             })}
-                          </div>
-                        )}
+                           </div>
+                         )}
+
+                         <button onClick={() => printInvoice(order)}
+                           className="flex items-center gap-1.5 px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-wider border-2 border-[#C41E3A]/20 bg-white text-[#C41E3A] hover:bg-[#C41E3A]/5 transition-all cursor-pointer">
+                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                           Print Invoice
+                         </button>
 
                          {/* Details Grid */}
                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">

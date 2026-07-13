@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS tables (
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS table_id INTEGER REFERENCES tables(id);
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS guest_name VARCHAR(255) DEFAULT '';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS split_bill BOOLEAN DEFAULT false;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS session_token VARCHAR(64);
 
 CREATE INDEX IF NOT EXISTS idx_orders_table_id ON orders (table_id);
 CREATE INDEX IF NOT EXISTS idx_tables_qr_token ON tables (qr_token);

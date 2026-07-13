@@ -70,6 +70,7 @@
 - [x] Admin orders dashboard — view all orders, filter by status, update order status
 - [x] Checkout form — delivery details (name, phone, address, notes) before submission
 - [x] Order success modal — confirmation with order ID + animated kitchen tracker
+- [x] Invoice generator — printable invoice with branding, item details, and totals
 
 ## Phase 5c: Product & Add-on Management UI [Done]
 
@@ -97,10 +98,11 @@
 - [x] AdminTables.tsx — create/edit/delete tables, copy QR URLs to clipboard
 - [x] AdminDashboard.tsx — Tables tab added
 - [x] TableOrder.tsx — public QR landing page with menu browsing, customization, cart, order placement
+- [x] Session token protection — UUID session per visit, rate limiting, admin block API
 - [x] Split bill UI — toggle in order confirmation modal
 - [x] QR code image generation/download — Google Charts QR API with download button
 
-Do## Phase 5f: Kitchen Display System [Done]
+## Phase 5f: Kitchen Display System [Done]
 
   - [x] Kitchen role — restricted, set by admin/manager via AdminUsers. Admins and managers can also access kitchen.
   - [x] Kitchen role check API — GET /api/kitchen/check (accepts kitchen/admin/manager)
@@ -115,6 +117,7 @@ Do## Phase 5f: Kitchen Display System [Done]
   - [x] Navbar Kitchen link — gated by isKitchen prop (kitchen/admin/manager users see it)
 - [x] Kitchen sound alert — Web Audio API chime on new order
 - [x] Printable kitchen tickets — print button + @media print CSS
+- [x] Invoice generator — printable invoice with item details, totals, and branding
 
 ## Phase 6: Payments [Not Started]
 

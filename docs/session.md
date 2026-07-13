@@ -69,6 +69,13 @@
   - **Clerk production instance** — currently running on dev instance
   - **Cart addon pricing** — useCart.ts still uses hardcoded constants for cart pricing, may differ from dynamically displayed prices
 
+## Session 15 — [2026-07-14] — Session token system + invoice generator
+
+- **Session token protection**: TableOrder generates a UUID session token on first visit (stored in localStorage), sent with every order. Server enforces it — blocked sessions get 403. Admin has `POST /api/admin/block-session` endpoint to flag abuse.
+- **Rate limiting**: 10 orders per table per 30 min (in-memory). Prevents spam without bothering legit guests.
+- **Invoice generator**: "Print Invoice" button on expanded order in AdminOrders — opens a new window with a branded receipt and triggers print dialog.
+- **Files touched**: src/pages/TableOrder.tsx, src/pages/AdminOrders.tsx, src/types/index.ts, server.ts, src/db/schema.sql, docs/
+
 ## Session 14 — [2026-07-14] — Complete remaining phases (excluding Payment)
 
 - **Split bill UI**: Added toggle in TableOrder confirmation modal, sends `splitBill` in request.

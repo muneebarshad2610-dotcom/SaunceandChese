@@ -321,6 +321,7 @@ app.get('/api/orders', requireAuth, async (req, res) => {
               customer_name AS "customerName", customer_phone AS "customerPhone",
               delivery_address AS "deliveryAddress", delivery_notes AS "deliveryNotes",
               items, subtotal, status, table_id AS "tableId", guest_name AS "guestName", split_bill AS "splitBill",
+              session_token AS "sessionToken",
               created_at AS "createdAt", updated_at AS "updatedAt"
        FROM orders
        WHERE clerk_user_id = $1
@@ -351,6 +352,7 @@ app.get('/api/orders/admin', requireAuth, async (req, res) => {
               customer_name AS "customerName", customer_phone AS "customerPhone",
               delivery_address AS "deliveryAddress", delivery_notes AS "deliveryNotes",
               items, subtotal, status, table_id AS "tableId", guest_name AS "guestName", split_bill AS "splitBill",
+              session_token AS "sessionToken",
               created_at AS "createdAt", updated_at AS "updatedAt"
        FROM orders
        ORDER BY created_at DESC`
@@ -417,6 +419,29 @@ app.get('/api/admin/check', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('GET /api/admin/check error:', err);
     res.status(500).json({ error: 'Failed to check admin status' });
+  }
+});
+
+// POST /api/admin/block-session — Block a table session token (admin/manager only)
+app.post('/api/admin/block-session', requireAuth, async (req, res) => {
+  try {
+    const clerkUserId = (req as any).auth.userId;
+    const admin = await isAdminUser(clerkUserId);
+    if (!admin) {
+      res.status(403).json({ error: 'Admin access required' });
+      return;
+    }
+    const { sessionToken } = req.body;
+    if (!sessionToken || typeof sessionToken !== 'string' || sessionToken.length < 16) {
+      res.status(400).json({ error: 'Valid session token is required' });
+      return;
+    }
+    blockedSessions.add(sessionToken);
+    console.log(`🚫 Session blocked: ${sessionToken.slice(0, 12)}...`);
+    res.json({ success: true, message: 'Session blocked. Future orders from this session will be rejected.' });
+  } catch (err) {
+    console.error('POST /api/admin/block-session error:', err);
+    res.status(500).json({ error: 'Failed to block session' });
   }
 });
 
@@ -946,13 +971,40 @@ app.get('/api/table/:qrToken', async (req, res) => {
   }
 });
 
+// ─── Table Order Session Tracking & Rate Limiting ──────────────
+
+const blockedSessions = new Set<string>();
+const tableOrderRate = new Map<number, number[]>();
+
+function checkTableRate(tableId: number, max = 10, windowMs = 1800000): boolean {
+  const now = Date.now();
+  const hits = tableOrderRate.get(tableId) || [];
+  const recent = hits.filter((t) => now - t < windowMs);
+  if (recent.length >= max) return false;
+  recent.push(now);
+  tableOrderRate.set(tableId, recent);
+  return true;
+}
+
 // POST /api/orders/table — place order from table (no auth required, just guest name)
 app.post('/api/orders/table', async (req, res) => {
   try {
-    const { tableId, guestName, items, subtotal, splitBill } = req.body;
+    const { tableId, guestName, items, subtotal, splitBill, sessionToken } = req.body;
 
     if (!tableId || typeof tableId !== 'number') {
       res.status(400).json({ error: 'Table ID is required' });
+      return;
+    }
+    if (!sessionToken || typeof sessionToken !== 'string' || sessionToken.length < 16) {
+      res.status(400).json({ error: 'Valid session token is required — please refresh the QR page' });
+      return;
+    }
+    if (blockedSessions.has(sessionToken)) {
+      res.status(403).json({ error: 'Your orders could not be processed. Please scan the QR code again.' });
+      return;
+    }
+    if (!checkTableRate(tableId)) {
+      res.status(429).json({ error: 'Too many orders for this table. Please wait a while.' });
       return;
     }
     if (!guestName || typeof guestName !== 'string' || guestName.trim().length < 1) {
@@ -978,10 +1030,10 @@ app.post('/api/orders/table', async (req, res) => {
     }
 
     const { rows } = await pool.query(
-      `INSERT INTO orders (order_number, table_id, guest_name, items, subtotal, status, split_bill)
-       VALUES ($1, $2, $3, $4, $5, 'confirmed', $6)
+      `INSERT INTO orders (order_number, table_id, guest_name, items, subtotal, status, split_bill, session_token)
+       VALUES ($1, $2, $3, $4, $5, 'confirmed', $6, $7)
        RETURNING id, order_number AS "orderNumber", created_at AS "createdAt"`,
-      [orderNumber, tableId, guestName.trim(), itemsJson, subtotal, splitBill || false]
+      [orderNumber, tableId, guestName.trim(), itemsJson, subtotal, splitBill || false, sessionToken]
     );
 
     console.log(`📋 Table order #${rows[0].orderNumber} (Table ${tableId}, ${guestName})`);

@@ -50,6 +50,7 @@ export interface Order {
   tableId: number | null;
   guestName: string | null;
   splitBill: boolean | null;
+  sessionToken: string | null;
   createdAt: string;
   updatedAt: string;
 }

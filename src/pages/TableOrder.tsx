@@ -37,6 +37,15 @@ export default function TableOrder({ onNavigateHome }: { onNavigateHome: () => v
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
   const [addons, setAddons] = useState<AddonItem[]>([]);
+  const [sessionToken] = useState(() => {
+    const key = 'snc_table_session';
+    let st = localStorage.getItem(key);
+    if (!st || st.length < 16) {
+      st = crypto.randomUUID();
+      localStorage.setItem(key, st);
+    }
+    return st;
+  });
 
   const activeCategory = (name: string) => {
     const n = name.toLowerCase();
@@ -118,6 +127,7 @@ export default function TableOrder({ onNavigateHome }: { onNavigateHome: () => v
         body: JSON.stringify({
           tableId: table.id,
           guestName: guestName.trim(),
+          sessionToken,
           items: cart.map((c) => ({
             id: c.menuItem.id,
             name: c.menuItem.name,
@@ -139,7 +149,10 @@ export default function TableOrder({ onNavigateHome }: { onNavigateHome: () => v
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error((errData as { error?: string }).error || 'Failed to place order');
+        const msg = (errData as { error?: string }).error || 'Failed to place order';
+        if (res.status === 429) throw new Error(msg);
+        if (res.status === 403) throw new Error(msg);
+        throw new Error(msg);
       }
       const data = await res.json();
       setOrderSuccess(data.orderNumber);
