@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { Users, Search, Shield, ShieldCheck, User, RefreshCw, ChefHat } from 'lucide-react';
 import { useAuth } from '@clerk/react';
@@ -47,7 +47,7 @@ export default function AdminUsers() {
       setUsers(data);
     } catch (err) {
       setError('Could not load users');
-      console.error(err);
+      if (import.meta.env.DEV) console.error(err);
     } finally {
       setLoading(false);
     }
@@ -75,7 +75,7 @@ export default function AdminUsers() {
         prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
       );
     } catch (err) {
-      console.error(err);
+      if (import.meta.env.DEV) console.error(err);
       alert('Failed to update role');
     } finally {
       setUpdatingId(null);

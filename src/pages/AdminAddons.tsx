@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type FormEvent } from 'react';
+﻿import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import { motion } from 'motion/react';
 import { Plus, Pencil, Trash2, X, Search } from 'lucide-react';
 import { useAuth } from '@clerk/react';
@@ -45,7 +45,7 @@ export default function AdminAddons() {
       const data = await res.json();
       setAddons(data);
     } catch (err) {
-      console.error(err);
+      if (import.meta.env.DEV) console.error(err);
     } finally {
       setLoading(false);
     }
@@ -86,7 +86,7 @@ export default function AdminAddons() {
       clearAddonCache();
       setAddons((prev) => prev.filter((a) => a.id !== id));
     } catch (err) {
-      console.error(err);
+      if (import.meta.env.DEV) console.error(err);
       alert('Failed to delete');
     }
   };

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChefHat, Clock, Bell, RefreshCw, UtensilsCrossed } from 'lucide-react';
 import { useAuth } from '@clerk/react';
@@ -33,7 +33,7 @@ export default function KitchenView({ onNavigateHome }: Props) {
         return data;
       });
     } catch (err) {
-      console.error(err);
+      if (import.meta.env.DEV) console.error(err);
     } finally {
       setLoading(false);
     }
@@ -82,7 +82,7 @@ export default function KitchenView({ onNavigateHome }: Props) {
         prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
       );
     } catch (err) {
-      console.error(err);
+      if (import.meta.env.DEV) console.error(err);
     } finally {
       setUpdatingId(null);
     }
@@ -192,7 +192,7 @@ export default function KitchenView({ onNavigateHome }: Props) {
                             <UtensilsCrossed className="w-3 h-3" /> Table {order.tableNumber}
                           </span>
                         )}
-                        {order.guestName && <span>— {order.guestName}</span>}
+                        {order.guestName && <span>â€” {order.guestName}</span>}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -245,13 +245,13 @@ export default function KitchenView({ onNavigateHome }: Props) {
                         ) : nextStatus === 'ready' ? (
                           'Mark as Ready'
                         ) : (
-                          'Next →'
+                          'Next â†’'
                         )}
                       </button>
                     )}
                     {!nextStatus && (
                       <div className="text-center text-green-400 text-xs font-black uppercase tracking-wider py-2">
-                        ✓ Completed
+                        âœ“ Completed
                       </div>
                     )}
                   </div>

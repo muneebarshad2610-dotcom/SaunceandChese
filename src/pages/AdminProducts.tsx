@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -91,7 +91,7 @@ export default function AdminProducts() {
       const data = await res.json();
       setItems(data);
     } catch (err) {
-      console.error(err);
+      if (import.meta.env.DEV) console.error(err);
     } finally {
       setLoading(false);
     }
@@ -138,7 +138,7 @@ export default function AdminProducts() {
       if (!res.ok) throw new Error('Failed to delete');
       setItems((prev) => prev.filter((i) => i.id !== id));
     } catch (err) {
-      console.error(err);
+      if (import.meta.env.DEV) console.error(err);
       alert('Failed to delete item');
     }
   };
@@ -185,7 +185,7 @@ export default function AdminProducts() {
       await fetchItems();
       setShowForm(false);
     } catch (err) {
-      console.error(err);
+      if (import.meta.env.DEV) console.error(err);
       alert(err instanceof Error ? err.message : 'Failed to save item');
     } finally {
       setSaving(false);

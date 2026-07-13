@@ -37,6 +37,15 @@ const allowedOrigins = process.env.CORS_ORIGINS
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: '1mb' }));
 
+// Global JSON parse error handler — avoid leaking server details on malformed input
+app.use((err: any, _req: any, res: any, next: any) => {
+  if (err instanceof SyntaxError && 'body' in err) {
+    res.status(400).json({ error: 'Malformed JSON in request body' });
+    return;
+  }
+  next(err);
+});
+
 // ─── Custom auth middleware (uses @clerk/backend verifyToken directly) ─
 // We don't rely on @clerk/express middleware because v2.1.40 has a bug
 // where req.auth can be undefined instead of always being set.
@@ -184,7 +193,7 @@ app.post('/api/contact', async (req, res) => {
       [name.trim(), email.trim(), message?.trim() || '', clerkUserId]
     );
 
-    console.log(`📩 Contact form submission #${rows[0].id} from ${email}`);
+    console.log(`📩 Contact form submission #${rows[0].id}`);
     res.status(201).json({
       success: true,
       id: rows[0].id,
@@ -329,7 +338,7 @@ function calculateETA(createdAt: string, queueAhead: number): string {
     const queueAhead = parseInt((queueRes.rows[0] as any)?.cnt || '0', 10);
     const estimatedDeliveryAt = calculateETA(rows[0].created_at, queueAhead);
 
-    console.log(`📦 Order #${rows[0].order_number} confirmed (user=${clerkUserId})`);
+    console.log(`📦 Order #${rows[0].order_number} confirmed`);
     res.status(201).json({
       success: true,
       id: rows[0].id,
@@ -354,7 +363,6 @@ app.get('/api/orders', requireAuth, async (req, res) => {
               customer_name AS "customerName", customer_phone AS "customerPhone",
               delivery_address AS "deliveryAddress", delivery_notes AS "deliveryNotes",
               items, subtotal, status, table_id AS "tableId", guest_name AS "guestName", split_bill AS "splitBill",
-              session_token AS "sessionToken",
               created_at AS "createdAt", updated_at AS "updatedAt",
               confirmed_at AS "confirmedAt", preparing_at AS "preparingAt",
               out_for_delivery_at AS "outForDeliveryAt", delivered_at AS "deliveredAt"
@@ -384,13 +392,8 @@ app.get('/api/orders', requireAuth, async (req, res) => {
 // GET /api/orders/admin — Get ALL orders (admin only)
 app.get('/api/orders/admin', requireAuth, async (req, res) => {
   try {
-    const clerkUserId = (req as any).auth.userId;
-    const admin = await isAdminUser(clerkUserId);
-
-    if (!admin) {
-      res.status(403).json({ error: 'Admin access required' });
-      return;
-    }
+    const _adminUser = await requireAdminOrManager(req, res);
+    if (!_adminUser) return;
 
     const { rows } = await pool.query(
       `SELECT id, order_number AS "orderNumber", clerk_user_id AS "clerkUserId",
@@ -425,13 +428,8 @@ app.get('/api/orders/admin', requireAuth, async (req, res) => {
 // PATCH /api/orders/:id/status — Update order status (admin only)
 app.patch('/api/orders/:id/status', requireAuth, async (req, res) => {
   try {
-    const clerkUserId = (req as any).auth.userId;
-    const admin = await isAdminUser(clerkUserId);
-
-    if (!admin) {
-      res.status(403).json({ error: 'Admin access required' });
-      return;
-    }
+    const _adminUser = await requireAdminOrManager(req, res);
+    if (!_adminUser) return;
 
     const orderId = parseInt(req.params.id, 10);
     if (isNaN(orderId)) {
@@ -490,19 +488,15 @@ app.get('/api/admin/check', requireAuth, async (req, res) => {
 // POST /api/admin/block-session — Block a table session token (admin/manager only)
 app.post('/api/admin/block-session', requireAuth, async (req, res) => {
   try {
-    const clerkUserId = (req as any).auth.userId;
-    const admin = await isAdminUser(clerkUserId);
-    if (!admin) {
-      res.status(403).json({ error: 'Admin access required' });
-      return;
-    }
+    const _adminUser = await requireAdminOrManager(req, res);
+    if (!_adminUser) return;
     const { sessionToken } = req.body;
     if (!sessionToken || typeof sessionToken !== 'string' || sessionToken.length < 16) {
       res.status(400).json({ error: 'Valid session token is required' });
       return;
     }
     blockedSessions.add(sessionToken);
-    console.log(`🚫 Session blocked: ${sessionToken.slice(0, 12)}...`);
+    console.log(`🚫 Session blocked`);
     res.json({ success: true, message: 'Session blocked. Future orders from this session will be rejected.' });
   } catch (err) {
     console.error('POST /api/admin/block-session error:', err);
@@ -593,6 +587,24 @@ app.put('/api/menu-items/:id', requireAuth, async (req, res) => {
     }
 
     const { name, category, price, price_small, price_regular, price_large, product_category, variants, description, image, base_cheese, base_sauce } = req.body;
+
+    // Validate required fields (matching POST validation)
+    if (!name || typeof name !== 'string' || name.trim().length < 1) {
+      res.status(400).json({ error: 'Name is required' });
+      return;
+    }
+    if (!category || !['classic', 'special', 'deal'].includes(category)) {
+      res.status(400).json({ error: 'Category must be classic, special, or deal' });
+      return;
+    }
+    if (!description || typeof description !== 'string') {
+      res.status(400).json({ error: 'Description is required' });
+      return;
+    }
+    if (!image || typeof image !== 'string') {
+      res.status(400).json({ error: 'Image URL is required' });
+      return;
+    }
 
     const variantsJson = variants && Array.isArray(variants) && variants.length > 0 ? JSON.stringify(variants) : '[]';
 
@@ -709,7 +721,7 @@ app.patch('/api/users/:id/role', requireAuth, async (req, res) => {
       publicMetadata: { role },
     });
 
-    console.log(`👤 User ${targetUserId} role set to ${role}`);
+    console.log(`👤 User role set to ${role}`);
     res.json({ success: true, userId: targetUserId, role });
   } catch (err) {
     console.error('PATCH /api/users/:id/role error:', err);
@@ -870,6 +882,16 @@ app.put('/api/addons/:id', requireAuth, async (req, res) => {
 
     const { type, name, price, is_active, sort_order } = req.body;
 
+    // Validate required fields (matching POST validation)
+    if (!type || !['sauce', 'drink', 'extra'].includes(type)) {
+      res.status(400).json({ error: 'Type must be sauce, drink, or extra' });
+      return;
+    }
+    if (!name || typeof name !== 'string' || name.trim().length < 1) {
+      res.status(400).json({ error: 'Name is required' });
+      return;
+    }
+
     const { rows } = await pool.query(
       `UPDATE addons
        SET type = $1, name = $2, price = $3, is_active = $4, sort_order = $5, updated_at = NOW()
@@ -982,6 +1004,18 @@ app.patch('/api/tables/:id', requireAuth, async (req, res) => {
     }
 
     const { table_number, capacity, is_active } = req.body;
+    if (typeof table_number !== 'number' || table_number < 1) {
+      res.status(400).json({ error: 'Valid table number is required' });
+      return;
+    }
+    if (capacity !== undefined && (typeof capacity !== 'number' || capacity < 1)) {
+      res.status(400).json({ error: 'Capacity must be a positive number' });
+      return;
+    }
+    if (is_active !== undefined && typeof is_active !== 'boolean') {
+      res.status(400).json({ error: 'is_active must be a boolean' });
+      return;
+    }
     const { rows } = await pool.query(
       `UPDATE tables SET table_number = $1, capacity = $2, is_active = $3 WHERE id = $4
        RETURNING id, table_number AS "tableNumber", qr_token AS "qrToken", capacity, is_active AS "isActive"`,
@@ -1067,7 +1101,7 @@ app.post('/api/orders/table', async (req, res) => {
       res.status(400).json({ error: 'Table ID is required' });
       return;
     }
-    if (!sessionToken || typeof sessionToken !== 'string' || sessionToken.length < 16) {
+    if (!sessionToken || typeof sessionToken !== 'string' || !/^[a-f0-9-]{36}$/i.test(sessionToken)) {
       res.status(400).json({ error: 'Valid session token is required — please refresh the QR page' });
       return;
     }

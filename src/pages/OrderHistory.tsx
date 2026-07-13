@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Package, Clock, ChevronDown, ChevronUp, MapPin, Phone, User, RefreshCw } from 'lucide-react';
 import { useAuth } from '@clerk/react';
@@ -54,7 +54,7 @@ export default function OrderHistory({ onNavigateHome, onReorder }: Props) {
       setOrders(data);
     } catch (err) {
       setError('Could not load your orders. Please try again.');
-      console.error(err);
+      if (import.meta.env.DEV) console.error(err);
     } finally {
       setLoading(false);
     }
@@ -342,9 +342,9 @@ export default function OrderHistory({ onNavigateHome, onReorder }: Props) {
                                     </p>
                                     <p className="text-[10px] text-[#C41E3A]/50">
                                       x{item.qty}
-                                      {item.selectedSize && ` • ${item.selectedSize}`}
-                                      {item.selectedVariants && Object.entries(item.selectedVariants).map(([k, v]) => ` • ${k}: ${v}`).join('')}
-                                      {item.addons && item.addons.length > 0 && ` • ${item.addons.map((a: any) => a.name).join(' + ')}`}
+                                      {item.selectedSize && ` â€¢ ${item.selectedSize}`}
+                                      {item.selectedVariants && Object.entries(item.selectedVariants).map(([k, v]) => ` â€¢ ${k}: ${v}`).join('')}
+                                      {item.addons && item.addons.length > 0 && ` â€¢ ${item.addons.map((a: any) => a.name).join(' + ')}`}
                                     </p>
                                   </div>
                                 </div>

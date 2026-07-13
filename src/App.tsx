@@ -236,7 +236,7 @@ export default function App() {
         pendingOrderRef.current = null;
         checkoutSnapshotRef.current = null;
       } catch (err) {
-        console.error('Order submission failed:', err);
+        if (import.meta.env.DEV) console.error('Order submission failed:', err);
         setCheckoutLoading(false);
         setShowPaymentModal(false);
         alert(err instanceof Error ? err.message : 'Failed to place order. Please try again.');

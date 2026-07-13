@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type FormEvent } from 'react';
+﻿import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import { motion } from 'motion/react';
 import { Plus, Pencil, Trash2, X, QrCode, Search, Copy, Check } from 'lucide-react';
 import { useAuth } from '@clerk/react';
@@ -31,7 +31,7 @@ export default function AdminTables() {
       const data = await res.json();
       setTables(data);
     } catch (err) {
-      console.error(err);
+      if (import.meta.env.DEV) console.error(err);
     } finally {
       setLoading(false);
     }
@@ -63,7 +63,7 @@ export default function AdminTables() {
       if (!res.ok) throw new Error('Failed');
       setTables((prev) => prev.filter((t) => t.id !== id));
     } catch (err) {
-      console.error(err);
+      if (import.meta.env.DEV) console.error(err);
       alert('Failed to delete');
     }
   };

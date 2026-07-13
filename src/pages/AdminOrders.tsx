@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Package, RefreshCw, ChefHat, Bike, CheckCircle, XCircle,
@@ -89,7 +89,7 @@ export default function AdminOrders({ onNavigateHome }: Props) {
       setOrders(data);
     } catch (err) {
       setError('Could not load orders. Please try again.');
-      console.error(err);
+      if (import.meta.env.DEV) console.error(err);
     } finally {
       setLoading(false);
     }
@@ -128,7 +128,7 @@ export default function AdminOrders({ onNavigateHome }: Props) {
         prev.map((o) => (o.id === orderId ? { ...o, status: newStatus, updatedAt: new Date().toISOString() } : o))
       );
     } catch (err) {
-      console.error(err);
+      if (import.meta.env.DEV) console.error(err);
       alert('Failed to update order status');
     } finally {
       setUpdatingId(null);
@@ -512,9 +512,9 @@ export default function AdminOrders({ onNavigateHome }: Props) {
                                     <p className="font-bold text-xs text-[#C41E3A]">{item.name}</p>
                                     <p className="text-[10px] text-[#C41E3A]/50">
                                       x{item.qty}
-                                      {item.selectedSize && ` • ${item.selectedSize}`}
-                                      {item.selectedVariants && Object.entries(item.selectedVariants).map(([k, v]) => ` • ${k}: ${v}`).join('')}
-                                      {item.addons && item.addons.length > 0 && ` • ${item.addons.map((a: any) => a.name).join(' + ')}`}
+                                      {item.selectedSize && ` â€¢ ${item.selectedSize}`}
+                                      {item.selectedVariants && Object.entries(item.selectedVariants).map(([k, v]) => ` â€¢ ${k}: ${v}`).join('')}
+                                      {item.addons && item.addons.length > 0 && ` â€¢ ${item.addons.map((a: any) => a.name).join(' + ')}`}
                                     </p>
                                   </div>
                                 </div>

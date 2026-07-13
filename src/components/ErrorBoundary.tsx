@@ -22,7 +22,7 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('Error Boundary caught:', error, errorInfo);
+    if (import.meta.env.DEV) console.error('Error Boundary caught:', error, errorInfo);
   }
 
   render(): ReactNode {
@@ -48,7 +48,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               </p>
             </div>
 
-            {s.error && (
+            {import.meta.env.DEV && s.error && (
               <p className="text-xs font-mono text-[#C41E3A]/50 bg-[#C41E3A]/5 p-3 rounded-xl border border-[#C41E3A]/10 break-words max-h-24 overflow-y-auto">
                 {s.error.message}
               </p>

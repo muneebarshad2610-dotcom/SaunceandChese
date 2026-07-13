@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent } from 'react';
+﻿import { useState, useEffect, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { User, MapPin, Phone, Plus, Trash2, X, Check, Heart } from 'lucide-react';
 import { useAuth, useUser } from '@clerk/react';
@@ -31,7 +31,7 @@ export default function ProfilePage({ onNavigateHome }: { onNavigateHome: () => 
       });
       if (res.ok) setAddresses(await res.json());
     } catch (err) {
-      console.error(err);
+      if (import.meta.env.DEV) console.error(err);
     } finally {
       setLoading(false);
     }
@@ -58,7 +58,7 @@ export default function ProfilePage({ onNavigateHome }: { onNavigateHome: () => 
         setForm({ label: '', address: '', phone: '', isDefault: false });
       }
     } catch (err) {
-      console.error(err);
+      if (import.meta.env.DEV) console.error(err);
     } finally {
       setSaving(false);
     }
@@ -96,7 +96,7 @@ export default function ProfilePage({ onNavigateHome }: { onNavigateHome: () => 
               <p className="font-black text-lg text-[#C41E3A]">{user.fullName || 'User'}</p>
               <p className="text-sm text-[#C41E3A]/60">
                 {user.primaryEmailAddress?.emailAddress}
-                {user.primaryPhoneNumber?.phoneNumber && ' · ' + user.primaryPhoneNumber.phoneNumber}
+                {user.primaryPhoneNumber?.phoneNumber && ' Â· ' + user.primaryPhoneNumber.phoneNumber}
               </p>
             </div>
           </div>
