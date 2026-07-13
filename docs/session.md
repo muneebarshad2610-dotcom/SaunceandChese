@@ -68,3 +68,47 @@
   - **Tests** — no unit, integration, or e2e tests
   - **Clerk production instance** — currently running on dev instance
   - **Cart addon pricing** — useCart.ts still uses hardcoded constants for cart pricing, may differ from dynamically displayed prices
+
+## Session 9 — [2026-07-14] — Tableside QR ordering + Kitchen display system
+
+- **Task given**: Tableside ordering (guests scan QR → menu → place order), QR management by manager, kitchen display for kitchen role (restricted, set by manager)
+- **What I changed**:
+  - **Database**:
+    - Added `tables` table (table_number, qr_token, capacity, is_active) with auto-generated QR tokens
+    - Added `table_id`, `guest_name`, `split_bill` columns to `orders` table
+    - Added indexes on `orders.table_id` and `tables.qr_token`
+    - Seeded 8 sample tables with UUID-based QR tokens
+  - **Server API**:
+    - Table CRUD: `GET/POST/PATCH/DELETE /api/tables` (admin/manager only)
+    - QR lookup: `GET /api/table/:qrToken` (public, returns table info)
+    - Table order: `POST /api/orders/table` (public, no auth, just guest name + items)
+    - Kitchen orders: `GET /api/kitchen/orders` (kitchen role, active orders only)
+    - Kitchen status: `PATCH /api/kitchen/orders/:id/status` (kitchen role, flow: preparing → ready → delivered)
+    - Kitchen check: `GET /api/kitchen/check` (auth, checks kitchen role)
+    - Role whitelist: `PATCH /api/users/:id/role` now accepts `'kitchen'`
+  - **Frontend**:
+    - **TableOrder.tsx** (new): Public QR landing page — guest enters name, browses full menu, customizes items (sauce, drink, extra cheese, sizes), cart management, confirmation modal, order success page. No sign-in required.
+    - **KitchenView.tsx** (new): Full-screen kitchen display with dark theme, auto-refresh (10s), order tickets with status colors (confirmed=yellow, preparing=blue, ready=green), urgent order pulsing (>15 min), new-order alert animation, item details, status progression buttons
+    - **AdminTables.tsx** (new): Table management — create/edit/delete tables, auto-generated QR tokens, copy QR URLs to clipboard
+    - **AdminDashboard.tsx**: Added Tables tab with QrCode icon
+    - **AdminUsers.tsx**: Added Kitchen role option (user/manager/kitchen/admin) with ChefHat icon and emerald color scheme
+    - **Navbar.tsx**: Added Kitchen link gated by `isKitchen` prop (only appears for kitchen-role users)
+    - **App.tsx**: Added `/kitchen` and `/table/:token` routes with standalone pages (no shell)
+
+- **Files touched**: server.ts, src/db/schema.sql, src/db/seed.sql, src/App.tsx, src/types/index.ts, src/pages/TableOrder.tsx (new), src/pages/KitchenView.tsx, src/pages/AdminTables.tsx, src/pages/AdminDashboard.tsx, src/pages/AdminUsers.tsx, src/components/layout/Navbar.tsx, docs/
+
+- **What's working now**:
+  - Guests scan QR code → see table-specific landing page → browse menu → customize + order → sent to kitchen
+  - Manager can create/edit/delete tables with auto-generated QR tokens
+  - Kitchen staff (kitchen role) see live orders auto-refreshing every 10s with status controls
+  - Kitchen role restricted — only users set by admin/manager via AdminUsers can access
+  - Kitchen link only appears for kitchen-role users
+  - Orders from tables are stored with table_id and guest_name for tracking
+
+- **What's broken / unfinished**:
+  - **Split bill** — `split_bill` column exists but UI not implemented on TableOrder page
+  - **QR code image generation** — no downloadable QR PNG, admin can only copy URL
+  - **Kitchen sound alert** — no audio notification for new orders
+  - **Printable kitchen tickets** — kitchen orders shown on screen, no print layout
+  - **Payments** — still not integrated
+  - **Cart addon pricing** — useCart.ts still uses hardcoded constants

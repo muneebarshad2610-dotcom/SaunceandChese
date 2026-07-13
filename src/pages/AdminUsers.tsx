@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
-import { Users, Search, Shield, ShieldCheck, User, RefreshCw } from 'lucide-react';
+import { Users, Search, Shield, ShieldCheck, User, RefreshCw, ChefHat } from 'lucide-react';
 import { useAuth } from '@clerk/react';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
@@ -20,10 +20,11 @@ interface ClerkUser {
 const ROLE_CONFIG: Record<string, { label: string; color: string; bg: string; icon: any }> = {
   admin: { label: 'Admin', color: 'text-red-600', bg: 'bg-red-100', icon: ShieldCheck },
   manager: { label: 'Manager', color: 'text-orange-600', bg: 'bg-orange-100', icon: Shield },
+  kitchen: { label: 'Kitchen', color: 'text-emerald-600', bg: 'bg-emerald-100', icon: ChefHat },
   user: { label: 'User', color: 'text-blue-600', bg: 'bg-blue-100', icon: User },
 };
 
-const ROLE_OPTIONS = ['user', 'manager', 'admin'] as const;
+const ROLE_OPTIONS = ['user', 'manager', 'kitchen', 'admin'] as const;
 
 export default function AdminUsers() {
   const { getToken } = useAuth();
@@ -93,9 +94,9 @@ export default function AdminUsers() {
   });
 
   const counts = {
-    all: users.length,
-    admin: users.filter((u) => u.role === 'admin').length,
+    all: users.length,            admin: users.filter((u) => u.role === 'admin').length,
     manager: users.filter((u) => u.role === 'manager').length,
+    kitchen: users.filter((u) => u.role === 'kitchen').length,
     user: users.filter((u) => u.role === 'user').length,
   };
 
@@ -116,7 +117,7 @@ export default function AdminUsers() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {(['all', 'admin', 'manager', 'user'] as const).map((key) => (
+            {(['all', 'admin', 'manager', 'kitchen', 'user'] as const).map((key) => (
               <span key={key}
                 className={`px-3 py-1.5 rounded-full font-black text-[10px] uppercase tracking-wider border-2 ${
                   key === 'all'

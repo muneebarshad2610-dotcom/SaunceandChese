@@ -45,3 +45,21 @@
   - **Cache invalidation**: `clearAddonCache()` exported, called after addon mutations
 - **Files touched**: server.ts, src/db/schema.sql, src/db/seed.sql, src/App.tsx, src/types/index.ts, src/pages/AdminDashboard.tsx (new), src/pages/AdminProducts.tsx (new), src/pages/AdminUsers.tsx (new), src/pages/AdminAddons.tsx (new), src/pages/AdminOrders.tsx, src/components/modals/QuickViewModal.tsx, docs/
 - **Known issues / TODO**: Payments not integrated. No tests. No Clerk production instance. Cart uses hardcoded addon prices.
+
+## [2026-07-14] — Tableside QR ordering + Kitchen display system
+
+- **What was completed**:
+  - **Tables DB**: `tables` table with auto-generated QR tokens, seeded 8 sample tables, `table_id`/`guest_name`/`split_bill` on orders
+  - **Table CRUD API**: GET/POST/PATCH/DELETE /api/tables (admin/manager) + GET /api/table/:token (public QR lookup)
+  - **Table ordering API**: POST /api/orders/table (public, guest name + items → kitchen)
+  - **Kitchen API**: GET /api/kitchen/orders + PATCH /api/kitchen/orders/:id/status (kitchen role only)
+  - **Kitchen check API**: GET /api/kitchen/check (auth) + role whitelist now accepts 'kitchen'
+  - **TableOrder.tsx**: Public QR landing page with full menu, customization, cart, order placement
+  - **KitchenView.tsx**: Dark-themed kitchen display with auto-refresh, status flow, urgency alerts
+  - **AdminTables.tsx**: Table management UI with QR URL copy
+  - **AdminDashboard.tsx**: Added Tables tab
+  - **AdminUsers.tsx**: Added Kitchen role option
+  - **Navbar.tsx**: Kitchen link gated by isKitchen prop
+  - **App.tsx**: Routes for /kitchen and /table/:token
+- **Files touched**: server.ts, src/db/schema.sql, src/db/seed.sql, src/App.tsx, src/types/index.ts, src/pages/TableOrder.tsx (new), src/pages/KitchenView.tsx, src/pages/AdminTables.tsx, src/pages/AdminDashboard.tsx, src/pages/AdminUsers.tsx, src/components/layout/Navbar.tsx, docs/
+- **Known issues / TODO**: Split bill UI not implemented. No QR image download. No kitchen sound alert. No printable tickets. Payments not integrated. Cart uses hardcoded prices.

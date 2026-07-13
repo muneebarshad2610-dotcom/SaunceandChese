@@ -28,7 +28,7 @@
 - **Frontend**: `ClerkProvider` wraps the app in `main.tsx`. Auth controls use the `Show` component.
 - **API calls**: `useAuth().getToken()` → `Authorization: Bearer <token>`
 - **Backend**: Custom `requireAuth` middleware uses `verifyToken(token, { secretKey })` from `@clerk/backend`.
-- **Role check**: `isAdminUser()` accepts both `'admin'` and `'manager'` roles via Clerk `public_metadata.role`.
+- **Role check**: `isAdminUser()` accepts `'admin'` or `'manager'` roles. `isKitchenUser()` accepts `'kitchen'` role. All via Clerk `public_metadata.role`.
 
 ### Environment Variables
 
@@ -53,37 +53,57 @@
 |-------|---------|--------|
 | `menu_items` | Product catalog (name, category, prices, description, image) | Active — 13 seed items |
 | `contacts` | Contact form submissions (name, email, message, clerk_user_id) | Active |
-| `orders` | Order records (order_number, clerk_user_id, items JSONB, subtotal, status) | Active — 5 statuses |
+| `orders` | Order records (order_number, clerk_user_id, items JSONB, subtotal, status, table_id, guest_name, split_bill) | Active — 5 statuses + tableside fields |
 | `addons` | Sauces, drinks, extras (type, name, price, is_active, sort_order) | Active — seeded with defaults |
+| `tables` | Table management for QR ordering (table_number, qr_token, capacity, is_active) | Active — 8 seeded tables with UUID QR tokens |
 
 ### Auto-migration
 
-On server startup, `server.ts` auto-runs `schema.sql` (idempotent `CREATE TABLE IF NOT EXISTS`) and `seed.sql` (inserts only if table is empty).
+On server startup, `server.ts` auto-runs `schema.sql` (idempotent `CREATE TABLE IF NOT EXISTS`) and `seed.sql` (inserts only if table is empty for menu_items, tables, addons).
 
 ---
 
 ## API Endpoints
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/api/health` | None | Health check |
-| GET | `/api/menu-items` | None | Returns all products |
-| POST | `/api/menu-items` | Admin/manager | Create product |
-| PUT | `/api/menu-items/:id` | Admin/manager | Update product |
-| DELETE | `/api/menu-items/:id` | Admin/manager | Delete product |
-| POST | `/api/contact` | None | Saves contact form |
-| POST | `/api/orders` | `requireAuth` | Create order |
-| GET | `/api/orders` | `requireAuth` | User's orders |
-| GET | `/api/orders/admin` | Admin/manager | All orders |
-| PATCH | `/api/orders/:id/status` | Admin/manager | Update order status |
-| GET | `/api/admin/check` | `requireAuth` | Check admin/manager role |
-| GET | `/api/users` | Admin/manager | List Clerk users |
-| PATCH | `/api/users/:id/role` | Admin/manager | Update user role |
-| GET | `/api/addons` | None | Active add-ons |
-| GET | `/api/addons/admin` | Admin/manager | All add-ons (incl. inactive) |
-| POST | `/api/addons` | Admin/manager | Create add-on |
-| PUT | `/api/addons/:id` | Admin/manager | Update add-on |
-| DELETE | `/api/addons/:id` | Admin/manager | Delete add-on |
+### Public (no auth)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/health` | Health check |
+| GET | `/api/menu-items` | Returns all products |
+| GET | `/api/addons` | Active add-ons (sauces, drinks, extras) |
+| GET | `/api/table/:qrToken` | Lookup table info by QR token |
+| POST | `/api/orders/table` | Place order from table (guest name + items) |
+| POST | `/api/contact` | Saves contact form |
+
+### Protected (requireAuth)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/orders` | Create order (delivery) |
+| GET | `/api/orders` | User's orders |
+| GET | `/api/admin/check` | Check admin/manager role |
+| GET | `/api/kitchen/check` | Check kitchen role |
+
+### Admin/Manager only
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/orders/admin` | All orders |
+| PATCH | `/api/orders/:id/status` | Update order status |
+| POST/PUT/DELETE | `/api/menu-items[/:id]` | Product CRUD |
+| GET/POST/PUT/DELETE | `/api/addons[/:id]` | Add-on CRUD |
+| GET | `/api/addons/admin` | All add-ons (incl. inactive) |
+| GET/POST/PATCH/DELETE | `/api/tables[/:id]` | Table CRUD with QR tokens |
+| GET | `/api/users` | List Clerk users |
+| PATCH | `/api/users/:id/role` | Update user role (user/manager/kitchen/admin) |
+
+### Kitchen role only
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/kitchen/orders` | Active orders (confirmed/preparing) |
+| PATCH | `/api/kitchen/orders/:id/status` | Update status (preparing/ready/delivered) |
 
 ---
 
@@ -106,12 +126,15 @@ On server startup, `server.ts` auto-runs `schema.sql` (idempotent `CREATE TABLE 
 
 ```
 Pages:
-  /       → Hero + StorySection + InstagramMarquee + LocationsSection + Footer
-  /menu   → MenuSection + DealsSection + Footer
-  /orders → OrderHistory (requires sign-in)
-  /admin  → AdminDashboard (admin/manager) → tabs: Orders, Products, Users, Add-ons
+  /              → Hero + StorySection + InstagramMarquee + LocationsSection + Footer
+  /menu          → MenuSection + DealsSection + Footer
+  /orders        → OrderHistory (requires sign-in)
+  /admin         → AdminDashboard (admin/manager) → tabs: Orders, Products, Users, Add-ons, Tables
+  /kitchen       → KitchenView (kitchen role) — standalone full-screen display
+  /table/:token  → TableOrder (public) — QR ordering page, no auth
 
-All pages share via renderShell(): Navbar, Footer, QuickViewModal, CartDrawer, CheckoutConfirmModal, CheckoutForm, OrderSuccessModal
+Shared shell (renderShell): Navbar, Footer, QuickViewModal, CartDrawer, CheckoutConfirmModal, CheckoutForm, OrderSuccessModal
+Standalone pages (no shell): /kitchen, /table/:token, /terms, /privacy
 ```
 
 ---
@@ -132,12 +155,17 @@ All pages share via renderShell(): Navbar, Footer, QuickViewModal, CartDrawer, C
 │   │   ├── useCart.ts          # Cart state + localStorage persistence
 │   │   └── useMenuItems.ts     # Fetch menu items from API
 │   ├── pages/
-│   │   ├── AdminDashboard.tsx   # Tabbed admin (Orders, Products, Users, Add-ons)
+│   │   ├── AdminDashboard.tsx   # Tabbed admin (Orders, Products, Users, Add-ons, Tables)
 │   │   ├── AdminOrders.tsx      # Order management (view, filter, update status)
 │   │   ├── AdminProducts.tsx    # Product/deal CRUD
-│   │   ├── AdminUsers.tsx       # User list + role management
+│   │   ├── AdminUsers.tsx       # User list + role management (user/manager/kitchen/admin)
 │   │   ├── AdminAddons.tsx      # Add-on management (sauces, drinks, extras)
-│   │   └── OrderHistory.tsx     # User's past orders view
+│   │   ├── AdminTables.tsx      # Table management with QR codes
+│   │   ├── KitchenView.tsx      # Kitchen display with live order tickets
+│   │   ├── TableOrder.tsx       # Public QR ordering page (no auth)
+│   │   ├── OrderHistory.tsx     # User's past orders view
+│   │   ├── TermsOfService.tsx   # Terms of service page
+│   │   └── PrivacyPolicy.tsx    # Privacy policy page
 │   ├── components/
 │   │   ├── ErrorBoundary.tsx
 │   │   ├── layout/  (Navbar, Footer)
@@ -146,6 +174,6 @@ All pages share via renderShell(): Navbar, Footer, QuickViewModal, CartDrawer, C
 │   │   └── ui/ (MenuCard, DealCard, SkeletonCard)
 │   └── db/
 │       ├── pool.ts             # PostgreSQL connection pool
-│       ├── schema.sql          # Database schema (4 tables + migrations)
-│       └── seed.sql            # Seed data for menu items + add-ons
+│       ├── schema.sql          # Database schema (5 tables + migrations)
+│       └── seed.sql            # Seed data for menu items, tables, add-ons
 ```

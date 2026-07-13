@@ -184,14 +184,23 @@ app.post('/api/contact', async (req, res) => {
 
 const clerkClient = createClerkClient({ secretKey: clerkSecretKey });
 
-async function isAdminUser(clerkUserId: string): Promise<boolean> {
+async function getUserRole(clerkUserId: string): Promise<string | null> {
   try {
     const user = await clerkClient.users.getUser(clerkUserId);
-    const role = (user.publicMetadata as Record<string, unknown>)?.role;
-    return role === 'admin' || role === 'manager';
+    return (user.publicMetadata as Record<string, unknown>)?.role as string || 'user';
   } catch {
-    return false;
+    return null;
   }
+}
+
+async function isAdminUser(clerkUserId: string): Promise<boolean> {
+  const role = await getUserRole(clerkUserId);
+  return role === 'admin' || role === 'manager';
+}
+
+async function isKitchenUser(clerkUserId: string): Promise<boolean> {
+  const role = await getUserRole(clerkUserId);
+  return role === 'kitchen';
 }
 
 async function requireAdminOrManager(req: any, res: any): Promise<string | null> {
@@ -203,6 +212,20 @@ async function requireAdminOrManager(req: any, res: any): Promise<string | null>
   const allowed = await isAdminUser(clerkUserId);
   if (!allowed) {
     res.status(403).json({ error: 'Admin or manager role required' });
+    return null;
+  }
+  return clerkUserId;
+}
+
+async function requireKitchen(req: any, res: any): Promise<string | null> {
+  const clerkUserId = req.auth?.userId;
+  if (!clerkUserId) {
+    res.status(401).json({ error: 'Authentication required' });
+    return null;
+  }
+  const isKitchen = await isKitchenUser(clerkUserId);
+  if (!isKitchen) {
+    res.status(403).json({ error: 'Kitchen role required' });
     return null;
   }
   return clerkUserId;
@@ -397,6 +420,18 @@ app.get('/api/admin/check', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/kitchen/check — Check if current user is kitchen staff
+app.get('/api/kitchen/check', requireAuth, async (req, res) => {
+  try {
+    const clerkUserId = (req as any).auth.userId;
+    const kitchen = await isKitchenUser(clerkUserId);
+    res.json({ kitchen });
+  } catch (err) {
+    console.error('GET /api/kitchen/check error:', err);
+    res.status(500).json({ error: 'Failed to check kitchen status' });
+  }
+});
+
 // ─── Menu Items CRUD (admin/manager only) ──────────────────────────
 
 // POST /api/menu-items — Create a new menu item
@@ -568,8 +603,8 @@ app.patch('/api/users/:id/role', requireAuth, async (req, res) => {
     const targetUserId = req.params.id;
     const { role } = req.body;
 
-    if (!role || !['user', 'admin', 'manager'].includes(role)) {
-      res.status(400).json({ error: 'Role must be user, admin, or manager' });
+    if (!role || !['user', 'admin', 'manager', 'kitchen'].includes(role)) {
+      res.status(400).json({ error: 'Role must be user, admin, manager, or kitchen' });
       return;
     }
 
@@ -717,6 +752,237 @@ app.delete('/api/addons/:id', requireAuth, async (req, res) => {
   }
 });
 
+// ─── Table Management (admin/manager only) ──────────────────────
+
+// GET /api/tables — list all tables
+app.get('/api/tables', requireAuth, async (req, res) => {
+  try {
+    const adminUser = await requireAdminOrManager(req, res);
+    if (!adminUser) return;
+
+    const { rows } = await pool.query(
+      `SELECT id, table_number AS "tableNumber", qr_token AS "qrToken",
+              capacity, is_active AS "isActive", created_at AS "createdAt"
+       FROM tables ORDER BY table_number`
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('GET /api/tables error:', err);
+    res.status(500).json({ error: 'Failed to fetch tables' });
+  }
+});
+
+// POST /api/tables — create a new table
+app.post('/api/tables', requireAuth, async (req, res) => {
+  try {
+    const adminUser = await requireAdminOrManager(req, res);
+    if (!adminUser) return;
+
+    const { table_number, capacity } = req.body;
+    if (!table_number || typeof table_number !== 'number') {
+      res.status(400).json({ error: 'Valid table number is required' });
+      return;
+    }
+
+    const qrToken = 'table-' + crypto.randomUUID();
+    const { rows } = await pool.query(
+      `INSERT INTO tables (table_number, qr_token, capacity)
+       VALUES ($1, $2, $3)
+       RETURNING id, table_number AS "tableNumber", qr_token AS "qrToken", capacity, is_active AS "isActive"`,
+      [table_number, qrToken, capacity || 4]
+    );
+
+    console.log(`🪑 Table ${table_number} created`);
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error('POST /api/tables error:', err);
+    res.status(500).json({ error: 'Failed to create table' });
+  }
+});
+
+// PATCH /api/tables/:id — update table
+app.patch('/api/tables/:id', requireAuth, async (req, res) => {
+  try {
+    const adminUser = await requireAdminOrManager(req, res);
+    if (!adminUser) return;
+
+    const tableId = parseInt(req.params.id, 10);
+    if (isNaN(tableId)) {
+      res.status(400).json({ error: 'Invalid table ID' });
+      return;
+    }
+
+    const { table_number, capacity, is_active } = req.body;
+    const { rows } = await pool.query(
+      `UPDATE tables SET table_number = $1, capacity = $2, is_active = $3 WHERE id = $4
+       RETURNING id, table_number AS "tableNumber", qr_token AS "qrToken", capacity, is_active AS "isActive"`,
+      [table_number, capacity, is_active, tableId]
+    );
+
+    if (rows.length === 0) {
+      res.status(404).json({ error: 'Table not found' });
+      return;
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('PATCH /api/tables/:id error:', err);
+    res.status(500).json({ error: 'Failed to update table' });
+  }
+});
+
+// DELETE /api/tables/:id — delete table
+app.delete('/api/tables/:id', requireAuth, async (req, res) => {
+  try {
+    const adminUser = await requireAdminOrManager(req, res);
+    if (!adminUser) return;
+
+    const tableId = parseInt(req.params.id, 10);
+    if (isNaN(tableId)) {
+      res.status(400).json({ error: 'Invalid table ID' });
+      return;
+    }
+
+    const { rows } = await pool.query('DELETE FROM tables WHERE id = $1 RETURNING id', [tableId]);
+    if (rows.length === 0) {
+      res.status(404).json({ error: 'Table not found' });
+      return;
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('DELETE /api/tables/:id error:', err);
+    res.status(500).json({ error: 'Failed to delete table' });
+  }
+});
+
+// ─── Table QR / Public Ordering ──────────────────────────────────
+
+// GET /api/table/:qrToken — public, returns table info + menu
+app.get('/api/table/:qrToken', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, table_number AS "tableNumber", capacity FROM tables WHERE qr_token = $1 AND is_active = true',
+      [req.params.qrToken]
+    );
+    if (rows.length === 0) {
+      res.status(404).json({ error: 'Table not found or inactive' });
+      return;
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('GET /api/table/:qrToken error:', err);
+    res.status(500).json({ error: 'Failed to fetch table' });
+  }
+});
+
+// POST /api/orders/table — place order from table (no auth required, just guest name)
+app.post('/api/orders/table', async (req, res) => {
+  try {
+    const { tableId, guestName, items, subtotal, splitBill } = req.body;
+
+    if (!tableId || typeof tableId !== 'number') {
+      res.status(400).json({ error: 'Table ID is required' });
+      return;
+    }
+    if (!guestName || typeof guestName !== 'string' || guestName.trim().length < 1) {
+      res.status(400).json({ error: 'Guest name is required' });
+      return;
+    }
+    if (!Array.isArray(items) || items.length === 0) {
+      res.status(400).json({ error: 'At least one item is required' });
+      return;
+    }
+    if (typeof subtotal !== 'number' || subtotal <= 0) {
+      res.status(400).json({ error: 'Valid subtotal is required' });
+      return;
+    }
+
+    const orderNumber = 'TBL-' + Math.floor(100000 + Math.random() * 900000);
+    let itemsJson: string;
+    try {
+      itemsJson = JSON.stringify(items);
+    } catch {
+      res.status(400).json({ error: 'Invalid items data' });
+      return;
+    }
+
+    const { rows } = await pool.query(
+      `INSERT INTO orders (order_number, table_id, guest_name, items, subtotal, status, split_bill)
+       VALUES ($1, $2, $3, $4, $5, 'confirmed', $6)
+       RETURNING id, order_number AS "orderNumber", created_at AS "createdAt"`,
+      [orderNumber, tableId, guestName.trim(), itemsJson, subtotal, splitBill || false]
+    );
+
+    console.log(`📋 Table order #${rows[0].orderNumber} (Table ${tableId}, ${guestName})`);
+    res.status(201).json({
+      success: true,
+      id: rows[0].id,
+      orderNumber: rows[0].orderNumber,
+      createdAt: rows[0].createdAt,
+    });
+  } catch (err) {
+    console.error('POST /api/orders/table error:', err);
+    res.status(500).json({ error: 'Failed to submit table order' });
+  }
+});
+
+// ─── Kitchen Orders (kitchen role only) ──────────────────────────
+
+// GET /api/kitchen/orders — returns active orders for kitchen display
+app.get('/api/kitchen/orders', requireAuth, async (req, res) => {
+  try {
+    const kitchenUser = await requireKitchen(req, res);
+    if (!kitchenUser) return;
+
+    const { rows } = await pool.query(`
+      SELECT o.id, o.order_number AS "orderNumber", o.table_id AS "tableId",
+             o.guest_name AS "guestName", o.items, o.subtotal, o.status,
+             o.created_at AS "createdAt",
+             t.table_number AS "tableNumber"
+      FROM orders o
+      LEFT JOIN tables t ON o.table_id = t.id
+      WHERE o.status IN ('confirmed', 'preparing')
+      ORDER BY o.created_at ASC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error('GET /api/kitchen/orders error:', err);
+    res.status(500).json({ error: 'Failed to fetch kitchen orders' });
+  }
+});
+
+// PATCH /api/kitchen/orders/:id/status — kitchen updates order status
+app.patch('/api/kitchen/orders/:id/status', requireAuth, async (req, res) => {
+  try {
+    const kitchenUser = await requireKitchen(req, res);
+    if (!kitchenUser) return;
+
+    const orderId = parseInt(req.params.id, 10);
+    if (isNaN(orderId)) {
+      res.status(400).json({ error: 'Invalid order ID' });
+      return;
+    }
+
+    const { status } = req.body;
+    const validStatuses = ['preparing', 'ready', 'delivered'];
+    if (!validStatuses.includes(status)) {
+      res.status(400).json({ error: 'Status must be: preparing, ready, or delivered' });
+      return;
+    }
+
+    await pool.query(
+      'UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2',
+      [status, orderId]
+    );
+
+    console.log(`🍳 Kitchen order #${orderId} → ${status}`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('PATCH /api/kitchen/orders/:id/status error:', err);
+    res.status(500).json({ error: 'Failed to update order status' });
+  }
+});
+
 // Health check
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -743,6 +1009,7 @@ async function start() {
     console.log(`   GET  /api/orders/admin       (admin)`);
     console.log(`   PATCH /api/orders/:id/status (admin)`);
     console.log(`   GET  /api/admin/check`);
+    console.log(`   GET  /api/kitchen/check`);
     console.log(`   POST /api/menu-items        (admin)`);
     console.log(`   PUT  /api/menu-items/:id    (admin)`);
     console.log(`   DEL  /api/menu-items/:id    (admin)`);
@@ -752,7 +1019,15 @@ async function start() {
     console.log(`   GET  /api/addons/admin       (admin)`);
     console.log(`   POST /api/addons             (admin)`);
     console.log(`   PUT  /api/addons/:id         (admin)`);
-    console.log(`   DEL  /api/addons/:id         (admin)\n`);
+    console.log(`   DEL  /api/addons/:id         (admin)`);
+    console.log(`   GET  /api/tables              (admin)`);
+    console.log(`   POST /api/tables              (admin)`);
+    console.log(`   PATCH /api/tables/:id         (admin)`);
+    console.log(`   DEL  /api/tables/:id          (admin)`);
+    console.log(`   GET  /api/table/:token        (public)`);
+    console.log(`   POST /api/orders/table        (public)`);
+    console.log(`   GET  /api/kitchen/orders      (kitchen)`);
+    console.log(`   PATCH /api/kitchen/orders/:id/status (kitchen)\n`);
   });
 
   const shutdown = async () => {

@@ -16,6 +16,8 @@ import CheckoutForm from './components/modals/CheckoutForm';
 import OrderSuccessModal from './components/modals/OrderSuccessModal';
 import OrderHistory from './pages/OrderHistory';
 import AdminDashboard from './pages/AdminDashboard';
+import KitchenView from './pages/KitchenView';
+import TableOrder from './pages/TableOrder';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import { useCart } from './hooks/useCart';
@@ -24,7 +26,10 @@ import type { MenuItem, OrderDetails, CheckoutFormData } from './types';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
-type Page = 'home' | 'menu' | 'orders' | 'admin' | 'terms' | 'privacy';
+type Page = 'home' | 'menu' | 'orders' | 'admin' | 'kitchen' | 'terms' | 'privacy';
+
+// Dynamic path-based pages (not in the Page union)
+type DynamicPage = { type: 'table'; token: string };
 
 export default function App() {
   const { isSignedIn, getToken } = useAuth();
@@ -44,17 +49,20 @@ export default function App() {
   } = useCart();
 
   // Page routing — sync with URL via History API
-  const getPageFromPath = (): Page => {
+  const getPageFromPath = (): Page | DynamicPage => {
     const path = window.location.pathname;
     if (path === '/menu') return 'menu';
     if (path === '/orders') return 'orders';
     if (path === '/admin') return 'admin';
+    if (path === '/kitchen') return 'kitchen';
     if (path === '/terms') return 'terms';
     if (path === '/privacy') return 'privacy';
+    const tableMatch = path.match(/^\/table\/(.+)/);
+    if (tableMatch) return { type: 'table', token: tableMatch[1] };
     return 'home';
   };
 
-  const [currentPage, setCurrentPage] = useState<Page>(getPageFromPath);
+  const [currentPage, setCurrentPage] = useState<Page | DynamicPage>(getPageFromPath);
 
   // Sync state with browser back/forward
   useEffect(() => {
@@ -72,9 +80,10 @@ export default function App() {
   const [lastOrderDetails, setLastOrderDetails] = useState<OrderDetails | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isKitchen, setIsKitchen] = useState(false);
   const adminCheckedRef = useRef(false);
 
-  // Check admin status once
+  // Check admin + kitchen status once
   useEffect(() => {
     if (!isSignedIn || adminCheckedRef.current) return;
     adminCheckedRef.current = true;
@@ -89,9 +98,19 @@ export default function App() {
         if (res.ok) {
           const data = await res.json();
           setIsAdmin(data.admin);
+          // Kitchen check: users with 'kitchen' role are not admin, but can access kitchen
+          if (!data.admin) {
+            const kitchenRes = await fetch(API_BASE + '/api/kitchen/check', {
+              headers: { Authorization: 'Bearer ' + token },
+            });
+            if (kitchenRes.ok) {
+              const kitchenData = await kitchenRes.json();
+              setIsKitchen(kitchenData.kitchen);
+            }
+          }
         }
       } catch {
-        // Non-critical, just hide admin features
+        // Non-critical, just hide features
       }
     })();
   }, [isSignedIn, getToken]);
@@ -107,6 +126,8 @@ export default function App() {
     const url = page === 'home' ? '/' : '/' + page;
     window.history.pushState({ page }, '', url);
   }, []);
+
+
 
   const openQuickView = useCallback((item: MenuItem) => {
     setQuickViewItem(item);
@@ -219,6 +240,7 @@ export default function App() {
           currentPage={currentPage}
           onNavigate={navigate}
           isAdmin={isAdmin}
+          isKitchen={isKitchen}
         />
 
         <main className="flex-1">{children}</main>
@@ -285,6 +307,24 @@ export default function App() {
   if (currentPage === 'admin') {
     return renderShell(
       <AdminDashboard onNavigateHome={() => navigate('home')} />
+    );
+  }
+
+  // ─── Page: Kitchen ───────────────────────────────────────
+  if (currentPage === 'kitchen') {
+    return (
+      <ErrorBoundary>
+        <KitchenView onNavigateHome={() => navigate('home')} />
+      </ErrorBoundary>
+    );
+  }
+
+  // ─── Page: Table QR Ordering ──────────────────────────────
+  if (typeof currentPage === 'object' && currentPage.type === 'table') {
+    return (
+      <ErrorBoundary>
+        <TableOrder onNavigateHome={() => navigate('home')} />
+      </ErrorBoundary>
     );
   }
 

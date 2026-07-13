@@ -1,18 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Package, ShoppingBag, Users, ShieldOff, Pizza } from 'lucide-react';
+import { Package, ShoppingBag, Users, ShieldOff, Pizza, QrCode, ChefHat } from 'lucide-react';
 import { useAuth } from '@clerk/react';
 import AdminOrders from './AdminOrders';
 import AdminProducts from './AdminProducts';
 import AdminUsers from './AdminUsers';
 import AdminAddons from './AdminAddons';
+import AdminTables from './AdminTables';
 
-type AdminTab = 'orders' | 'products' | 'users' | 'addons';
+type AdminTab = 'orders' | 'products' | 'users' | 'addons' | 'tables';
 
 const TABS: { key: AdminTab; label: string; icon: any }[] = [
   { key: 'orders', label: 'Orders', icon: ShoppingBag },
   { key: 'products', label: 'Products', icon: Package },
   { key: 'users', label: 'Users', icon: Users },
   { key: 'addons', label: 'Add-ons', icon: Pizza },
+  { key: 'tables', label: 'Tables', icon: QrCode },
 ];
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
@@ -121,6 +123,7 @@ export default function AdminDashboard({ onNavigateHome }: Props) {
         {activeTab === 'products' && <AdminProducts />}
         {activeTab === 'users' && <AdminUsers />}
         {activeTab === 'addons' && <AdminAddons />}
+        {activeTab === 'tables' && <AdminTables />}
       </div>
     </div>
   );

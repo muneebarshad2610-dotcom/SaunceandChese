@@ -92,6 +92,27 @@ export const DRINK_OPTIONS = [
 ] as const;
 export const EXTRA_CHEESE_PRICE = 50;
 
+export interface TableInfo {
+  id: number;
+  tableNumber: number;
+  qrToken: string;
+  capacity: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface KitchenOrder {
+  id: number;
+  orderNumber: string;
+  tableId: number | null;
+  tableNumber: number | null;
+  guestName: string | null;
+  items: any[];
+  subtotal: number;
+  status: string;
+  createdAt: string;
+}
+
 // Dynamic add-ons fetched from API, with fallback to hardcoded defaults
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
 

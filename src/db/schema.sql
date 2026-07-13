@@ -62,6 +62,25 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_address TEXT         NOT NU
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_notes   TEXT         DEFAULT '';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS updated_at       TIMESTAMP    DEFAULT NOW();
 
+-- ─── Tables (QR code tableside ordering) ─────────────────────────
+
+CREATE TABLE IF NOT EXISTS tables (
+  id            SERIAL PRIMARY KEY,
+  table_number  INTEGER NOT NULL UNIQUE,
+  qr_token      VARCHAR(64) UNIQUE NOT NULL,
+  capacity      INTEGER DEFAULT 4,
+  is_active     BOOLEAN DEFAULT true,
+  created_at    TIMESTAMP DEFAULT NOW()
+);
+
+-- Add table_id and guest_name to orders (for tableside ordering)
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS table_id INTEGER REFERENCES tables(id);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS guest_name VARCHAR(255) DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS split_bill BOOLEAN DEFAULT false;
+
+CREATE INDEX IF NOT EXISTS idx_orders_table_id ON orders (table_id);
+CREATE INDEX IF NOT EXISTS idx_tables_qr_token ON tables (qr_token);
+
 -- ─── Add-ons (sauces, drinks, extras) ─────────────────────────────
 
 CREATE TABLE IF NOT EXISTS addons (

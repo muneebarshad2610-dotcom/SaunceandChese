@@ -7,7 +7,7 @@ import {
   UserButton,
 } from '@clerk/react';
 
-type Page = 'home' | 'menu' | 'orders' | 'admin';
+type Page = 'home' | 'menu' | 'orders' | 'admin' | 'kitchen';
 
 interface NavbarProps {
   cartItemCount: number;
@@ -15,6 +15,7 @@ interface NavbarProps {
   currentPage: Page;
   onNavigate: (page: Page) => void;
   isAdmin?: boolean;
+  isKitchen?: boolean;
 }
 
 const NAV_LINKS: { page: Page; label: string }[] = [
@@ -22,7 +23,7 @@ const NAV_LINKS: { page: Page; label: string }[] = [
   { page: 'menu', label: 'Menu' },
 ];
 
-export default function Navbar({ cartItemCount, onCartOpen, currentPage, onNavigate, isAdmin }: NavbarProps) {
+export default function Navbar({ cartItemCount, onCartOpen, currentPage, onNavigate, isAdmin, isKitchen }: NavbarProps) {
   return (
     <nav
       id="site-nav"
@@ -81,6 +82,17 @@ export default function Navbar({ cartItemCount, onCartOpen, currentPage, onNavig
             }`}
           >
             Admin
+          </button>
+        )}
+
+        {isKitchen && (
+          <button
+            onClick={() => onNavigate('kitchen')}
+            className={`transition-colors cursor-pointer ${
+              currentPage === 'kitchen' ? 'text-[#FFB81C]' : 'hover:text-[#FFB81C]'
+            }`}
+          >
+            Kitchen
           </button>
         )}
 
@@ -165,6 +177,18 @@ export default function Navbar({ cartItemCount, onCartOpen, currentPage, onNavig
           >
             Admin
           </button>
+        )}
+        {isKitchen && (
+          <button
+            onClick={() => onNavigate('kitchen')}
+            className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded transition-all cursor-pointer ${
+              currentPage === 'kitchen'
+                ? 'bg-[#C41E3A] text-white'
+                : 'text-[#C41E3A] hover:bg-[#C41E3A]/10'
+          }`}
+        >
+          Kitchen
+        </button>
         )}
         <Show when="signed-out">
           <SignInButton mode="modal">

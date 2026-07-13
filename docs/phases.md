@@ -45,7 +45,7 @@
 - [x] Express server created (server.ts) with auto-migration and seed on startup
 - [x] API endpoints: GET /api/menu-items, POST /api/contact, GET /api/health
 - [x] PostgreSQL database connected — hosted on Railway
-- [x] Database schema auto-applied (menu_items, contacts, orders, addons)
+- [x] Database schema auto-applied (menu_items, contacts, orders, addons, tables)
 - [x] CORS configured — read from CORS_ORIGINS env var
 - [x] Input validation — email format regex, required field checks
 - [x] Environment variables managed via .env and dotenv
@@ -73,7 +73,7 @@
 
 ## Phase 5c: Product & Add-on Management UI [Done]
 
-- [x] Admin dashboard — tabbed interface (Orders, Products, Users, Add-ons)
+- [x] Admin dashboard — tabbed interface (Orders, Products, Users, Add-ons, Tables)
 - [x] Product CRUD — AdminProducts.tsx with create/edit modal, search, category filter, image preview
 - [x] Add-on management — AdminAddons.tsx with sauces, drinks, extras CRUD
 - [x] Dynamic add-on fetch — QuickViewModal fetches from API with hardcoded fallback
@@ -82,8 +82,39 @@
 ## Phase 5d: User & Role Management [Done]
 
 - [x] Manager role — accepts both 'admin' and 'manager' roles
-- [x] User management UI — AdminUsers.tsx with list, search, role dropdown
-- [x] Role API — PATCH /api/users/:id/role sets public_metadata.role
+- [x] Kitchen role — accepts 'kitchen' role for kitchen display access
+- [x] User management UI — AdminUsers.tsx with list, search, role dropdown (user/manager/kitchen/admin)
+- [x] Role API — PATCH /api/users/:id/role sets public_metadata.role (now accepts 'kitchen')
+
+## Phase 5e: Tableside QR Ordering [Done]
+
+- [x] Tables database table with auto-generated QR tokens (UUID)
+- [x] Table CRUD API — GET/POST/PATCH/DELETE /api/tables (admin/manager only)
+- [x] Public QR lookup API — GET /api/table/:qrToken (returns table info)
+- [x] Public table order API — POST /api/orders/table (no auth, just guest name + items)
+- [x] table_id, guest_name, split_bill columns on orders table
+- [x] Seeded 8 sample tables on startup
+- [x] AdminTables.tsx — create/edit/delete tables, copy QR URLs to clipboard
+- [x] AdminDashboard.tsx — Tables tab added
+- [x] TableOrder.tsx — public QR landing page with menu browsing, customization, cart, order placement
+- [ ] Split bill UI — split_bill column exists but no frontend implementation
+- [ ] QR code image generation/download — admin can only copy URL, no PNG download
+
+## Phase 5f: Kitchen Display System [Done]
+
+- [x] Kitchen role — restricted, set by admin/manager via AdminUsers
+- [x] Kitchen role check API — GET /api/kitchen/check
+- [x] Kitchen orders API — GET /api/kitchen/orders (active confirmed/preparing orders)
+- [x] Kitchen status API — PATCH /api/kitchen/orders/:id/status (preparing → ready → delivered)
+- [x] KitchenView.tsx — full-screen dark-themed display with auto-refresh (10s)
+- [x] Status color coding — confirmed (yellow), preparing (blue), ready (green)
+- [x] Urgent order highlighting — pulsing red ring for orders >15 min
+- [x] New-order alert animation — bell icon + "New Order!" toast
+- [x] Order tickets with table number, guest name, items, elapsed time
+- [x] Status progression buttons — "Start Preparing" → "Mark as Ready" → Completed
+- [x] Navbar Kitchen link — gated by isKitchen prop (only kitchen-role users see it)
+- [ ] Kitchen sound alert — no audio notification for new orders
+- [ ] Printable kitchen tickets — no print layout for orders
 
 ## Phase 6: Payments [Not Started]
 
@@ -100,7 +131,8 @@
 - [x] Orders stored with `clerk_user_id` — tied to authenticated user
 - [x] Order history page — users can view past orders from their account
 - [x] Admin/manager role check via Clerk public_metadata
-- [x] User role management via admin UI
+- [x] Kitchen role check via Clerk public_metadata
+- [x] User role management via admin UI (user/manager/kitchen/admin)
 - [ ] User profile page — Clerk provides UserButton but no custom profile page
 - [ ] Saved addresses and preferences — per-user settings not yet implemented
 - [ ] Clerk production instance — currently running on dev instance
@@ -114,7 +146,7 @@
 - [x] Proper page title — "Sauce n' Cheese — Karachi's Gooiest Feast"
 - [x] Fix cheese-pull drag drift bug — using `useRef` + `info.point.y`
 - [x] Remove unused dependencies — `@google/genai`, `railway` removed
-- [x] Proper page routing — `/`, `/menu`, `/orders`, `/admin` via History API
+- [x] Proper page routing — `/`, `/menu`, `/orders`, `/admin`, `/kitchen`, `/table/:token` via History API
 - [ ] Unit tests — not yet implemented
 - [ ] Accessibility audit — not yet conducted
 - [ ] PWA / service worker — not yet implemented
