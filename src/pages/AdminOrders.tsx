@@ -491,7 +491,7 @@ export default function AdminOrders({ onNavigateHome }: Props) {
       <button
         onClick={fetchOrders}
         disabled={loading}
-        className="fixed bottom-6 right-6 bg-[#C41E3A] text-white p-3.5 rounded-full shadow-lg border-2 border-[#FFB81C] hover:bg-[#b01630] transition-all cursor-pointer disabled:opacity-50 z-30"
+        className="fixed bottom-6 left-6 bg-[#C41E3A] text-white p-3.5 rounded-full shadow-lg border-2 border-[#FFB81C] hover:bg-[#b01630] transition-all cursor-pointer disabled:opacity-50 z-30"
         title="Refresh orders"
       >
         <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />

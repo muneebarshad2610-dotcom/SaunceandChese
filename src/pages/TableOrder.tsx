@@ -328,7 +328,7 @@ export default function TableOrder({ onNavigateHome }: { onNavigateHome: () => v
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           onClick={() => setShowCart(true)}
-          className="fixed bottom-6 right-6 bg-[#FFB81C] text-[#C41E3A] p-4 rounded-full shadow-2xl border-2 border-[#C41E3A] z-40 cursor-pointer hover:scale-105 transition-transform"
+          className="fixed bottom-6 left-6 bg-[#FFB81C] text-[#C41E3A] p-4 rounded-full shadow-2xl border-2 border-[#C41E3A] z-40 cursor-pointer hover:scale-105 transition-transform"
         >
           <ShoppingBag className="w-6 h-6" />
           <span className="absolute -top-2 -right-2 bg-[#C41E3A] text-white w-6 h-6 rounded-full text-xs font-black flex items-center justify-center border-2 border-[#FFB81C]">
