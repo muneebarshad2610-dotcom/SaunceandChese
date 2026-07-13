@@ -1,10 +1,10 @@
 import { Instagram } from 'lucide-react';
 
 const MARQUEE_IMAGES = [
-  'https://images.unsplash.com/photo-1590947132387-155cc02f3212?q=80&w=400&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1579751626657-72bc74ced304?q=80&w=400&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1552539618-7eec9b4d1816?q=80&w=400&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1585109649139-366815a0d713?q=80&w=400&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1563379926898-05f4575a45d8?q=80&w=400&auto=format&fit=crop',
   'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=400&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1551782450-a2132b4ba21d?q=80&w=400&auto=format&fit=crop',
   'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?q=80&w=400&auto=format&fit=crop',
   'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=400&auto=format&fit=crop',
 ];
