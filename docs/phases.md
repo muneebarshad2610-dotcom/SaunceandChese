@@ -102,17 +102,17 @@
 
 ## Phase 5f: Kitchen Display System [Done]
 
-- [x] Kitchen role — restricted, set by admin/manager via AdminUsers
-- [x] Kitchen role check API — GET /api/kitchen/check
-- [x] Kitchen orders API — GET /api/kitchen/orders (active confirmed/preparing orders)
-- [x] Kitchen status API — PATCH /api/kitchen/orders/:id/status (preparing → ready → delivered)
-- [x] KitchenView.tsx — full-screen dark-themed display with auto-refresh (10s)
-- [x] Status color coding — confirmed (yellow), preparing (blue), ready (green)
-- [x] Urgent order highlighting — pulsing red ring for orders >15 min
-- [x] New-order alert animation — bell icon + "New Order!" toast
-- [x] Order tickets with table number, guest name, items, elapsed time
-- [x] Status progression buttons — "Start Preparing" → "Mark as Ready" → Completed
-- [x] Navbar Kitchen link — gated by isKitchen prop (only kitchen-role users see it)
+  - [x] Kitchen role — restricted, set by admin/manager via AdminUsers. Admins and managers can also access kitchen.
+  - [x] Kitchen role check API — GET /api/kitchen/check (accepts kitchen/admin/manager)
+  - [x] Kitchen orders API — GET /api/kitchen/orders (active confirmed/preparing orders)
+  - [x] Kitchen status API — PATCH /api/kitchen/orders/:id/status (preparing → ready → delivered)
+  - [x] KitchenView.tsx — full-screen dark-themed display with auto-refresh (10s)
+  - [x] Status color coding — confirmed (yellow), preparing (blue), ready (green)
+  - [x] Urgent order highlighting — pulsing red ring for orders >15 min
+  - [x] New-order alert animation — bell icon + "New Order!" toast
+  - [x] Order tickets with table number, guest name, items, elapsed time
+  - [x] Status progression buttons — "Start Preparing" → "Mark as Ready" → Completed
+  - [x] Navbar Kitchen link — gated by isKitchen prop (kitchen/admin/manager users see it)
 - [ ] Kitchen sound alert — no audio notification for new orders
 - [ ] Printable kitchen tickets — no print layout for orders
 

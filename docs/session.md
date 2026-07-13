@@ -69,6 +69,11 @@
   - **Clerk production instance** — currently running on dev instance
   - **Cart addon pricing** — useCart.ts still uses hardcoded constants for cart pricing, may differ from dynamically displayed prices
 
+## Session 11 — [2026-07-14] — Allow managers/admins to access kitchen
+
+- **Updated kitchen access**: Modified `isKitchenUser()` to accept 'admin', 'manager', and 'kitchen' roles. Updated App.tsx to check kitchen access for all users (not just non-admins).
+- **Files touched**: server.ts, src/App.tsx
+
 ## Session 10 — [2026-07-14] — Bug fixes for table ordering
 
 - **Fixed guest name input issue** in TableOrder.tsx: The input field was conditionally rendered based on `guestName` state, causing it to disappear after typing one character. Replaced with separate `editingGuestName` state for proper input visibility control.

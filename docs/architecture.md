@@ -28,7 +28,7 @@
 - **Frontend**: `ClerkProvider` wraps the app in `main.tsx`. Auth controls use the `Show` component.
 - **API calls**: `useAuth().getToken()` → `Authorization: Bearer <token>`
 - **Backend**: Custom `requireAuth` middleware uses `verifyToken(token, { secretKey })` from `@clerk/backend`.
-- **Role check**: `isAdminUser()` accepts `'admin'` or `'manager'` roles. `isKitchenUser()` accepts `'kitchen'` role. All via Clerk `public_metadata.role`.
+ - **Role check**: `isAdminUser()` accepts `'admin'` or `'manager'` roles. `isKitchenUser()` accepts `'kitchen'`, `'admin'`, or `'manager'` roles. All via Clerk `public_metadata.role`.
 
 ### Environment Variables
 

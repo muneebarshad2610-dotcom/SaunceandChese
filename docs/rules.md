@@ -41,7 +41,7 @@
 - **`@clerk/react` v6** — use `Show` component instead of v5's `SignedIn`/`SignedOut`
 - **Imports**: `ClerkProvider`, `Show`, `SignInButton`, `SignUpButton`, `UserButton`, `useAuth` from `@clerk/react`
 - **Server-side**: Custom `requireAuth` middleware using `verifyToken(token, { secretKey })` from `@clerk/backend`. **Do NOT use `@clerk/express`**.
-- **Role check**: `isAdminUser()` accepts `'admin'` and `'manager'` roles. `isKitchenUser()` accepts `'kitchen'` role.
+ - **Role check**: `isAdminUser()` accepts `'admin'` and `'manager'` roles. `isKitchenUser()` accepts `'kitchen'`, `'admin'`, and `'manager'` roles.
 - **Protected API calls**: `useAuth().getToken()` → always null-check: `if (!token) throw/return`
 
 ### Admin Patterns

@@ -45,7 +45,7 @@ Sauce n' Cheese is a **full-stack React + Express application** serving as a bra
 - **Custom auth middleware** using `verifyToken()` from `@clerk/backend`
 - **23 API endpoints**: public (health, menu-items, contact, addons, table lookup, table order), protected (orders, admin/kitchen check), admin/manager (orders/admin, menu-items CRUD, users, addons CRUD, tables CRUD), kitchen (kitchen orders, kitchen status update)
 - **5 database tables**: menu_items (13 seeded), contacts, orders, addons (11 seeded), tables (8 seeded)
-- **Role checks**: `isAdminUser()` for admin/manager, `isKitchenUser()` for kitchen
+ - **Role checks**: `isAdminUser()` for admin/manager, `isKitchenUser()` for kitchen/admin/manager
 
 ### Environment Variables
 
