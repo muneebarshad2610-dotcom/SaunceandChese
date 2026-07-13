@@ -16,65 +16,35 @@
 - **What was completed**: Created Express server with auto-migration, PostgreSQL database with 3 tables and 13 seeded menu items, GET /api/menu-items and POST /api/contact endpoints.
 - **Files touched**: server.ts, src/db/, .env, .gitignore, package.json, docs/
 
-## [2026-07-13] — COMPLETE REBUILD with Clerk Auth (current state)
+## [2026-07-13] — COMPLETE REBUILD with Clerk Auth
 
-- **What was completed**: 
-  - Deleted all old source code (except docs/ and Design.md)
-  - Fresh rebuild with full-stack architecture:
-    - Express server with Clerk session verification (clerkMiddleware + requireAuth)
-    - PostgreSQL database with `clerk_user_id` on contacts and orders tables
-    - 4 API endpoints (health, menu-items, contact, orders)
-    - React frontend with ClerkProvider, Show, SignInButton, SignUpButton, UserButton, useAuth
-    - Auth gate on checkout — must sign in to place orders
-    - All UI components (Hero, Story, Menu, Deals, Marquee, Locations, Footer)
-    - All modals (QuickView with cheese-pull fix, CartDrawer with auth gate, OrderSuccess)
-    - ErrorBoundary, SkeletonCard, loading skeletons, SEO/OG tags, lazy loading
-  - Clerk CLI initialized with app_3GSN1PxJfx14wV2WxNTxBsq9kfh
-  - Clerk doctor passes all checks
-  - Migrated from @clerk/clerk-react v5 to @clerk/react v6
-  - Removed unused dependencies (@google/genai, railway)
-  - All docs updated to reflect current state
-  - Committed and pushed to GitHub
-
+- **What was completed**: Full-stack rebuild with Clerk auth, Express server, PostgreSQL, all UI components, modals, error boundaries, SEO.
 - **Files touched**: All src/, server.ts, index.html, package.json, .env.example, .gitignore, docs/
 - **Known issues / TODO**: Payments not integrated. Order history page not built. No tests yet.
 
 ## [2026-07-13] — Railway deployment fixes + DB migration fix
 
-- **What was completed**:
-  - Added static file serving to server.ts (express.static('dist')) + SPA catch-all route
-  - Fixed start script: `node server.ts` → `tsx server.ts` (Node can't run .ts directly)
-  - Moved `tsx` from devDependencies to dependencies for Railway production
-  - Cleaned up vite.config.ts (removed AI Studio HMR settings)
-  - Wrote .env with user's Clerk keys and Railway PostgreSQL reference
-  - Fixed .env.example with Railway-compatible instructions
-  - Fixed DB migration: added `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` for clerk_user_id on existing tables
-  - Updated all docs with Railway deployment info
-
+- **What was completed**: Static file serving, start script fix, tsx moved to deps, DB migration fix.
 - **Files touched**: server.ts, package.json, vite.config.ts, .env, .env.example, src/db/schema.sql, docs/
-- **Known issues / TODO**: Payments not integrated. Need to verify Railway deployment after migration fix.
+- **Known issues / TODO**: Payments not integrated.
 
 ## [2026-07-13] — Order management system (admin dashboard + order history)
 
-- **What was completed**:
-  - Built AdminOrders page — view all orders, filter by status, update order status
-  - Built OrderHistory page — view current user's past orders with status tracking
-  - Built CheckoutForm modal — delivery details form (name, phone, address, notes)
-  - Built OrderSuccessModal — confirmation with order ID + animated kitchen tracker
-  - Added API endpoints: GET /api/orders, GET /api/orders/admin, PATCH /api/orders/:id/status, GET /api/admin/check
-  - Admin check uses Clerk public_metadata.role === 'admin' (no separate DB table)
-  - CartDrawer updated with checkout flow that opens CheckoutForm first
-
+- **What was completed**: Built AdminOrders, OrderHistory, CheckoutForm, OrderSuccessModal, added API routes.
 - **Files touched**: server.ts, src/App.tsx, src/pages/AdminOrders.tsx, src/pages/OrderHistory.tsx, src/components/modals/CheckoutForm.tsx, src/components/modals/OrderSuccessModal.tsx, src/components/modals/CartDrawer.tsx, docs/
 - **Known issues / TODO**: Payments not integrated.
 
 ## [2026-07-13] — Fix: JSON items serialization for pg + remove cart adjust feature
 
-- **What was completed**:
-  - Fixed `invalid input syntax for type json` error: explicitly JSON.stringify() items array before passing to pg query for JSONB column, with try/catch guard
-  - Removed cart quantity adjust (+/-) buttons from CartDrawer — now shows static Qty label with remove (trash) button only
-  - The `adjustQty` hook function remains in useCart.ts for future re-enablement
-  - Committed and pushed to GitHub
-
+- **What was completed**: Fixed JSONB serialization error, removed cart qty adjust buttons.
 - **Files touched**: server.ts, src/App.tsx, src/components/modals/CartDrawer.tsx, docs/
 - **Known issues / TODO**: Payments not integrated.
+
+## [2026-07-14] — Auth rewrite + proper page routing
+
+- **What was completed**:
+  - **Auth rewrite**: Replaced buggy `@clerk/express` middleware with custom `verifyToken()` from `@clerk/backend`. Added null-token guards throughout frontend.
+  - **Page routing**: Split single scroll-page into `/`, `/menu`, `/orders`, `/admin` with History API routing. Each page shows only relevant data.
+  - **Navbar/Hero**: Updated navigation to use page-based routing instead of anchor links.
+- **Files touched**: server.ts, src/App.tsx, src/pages/AdminOrders.tsx, src/pages/OrderHistory.tsx, src/components/layout/Navbar.tsx, src/components/sections/Hero.tsx, docs/
+- **Known issues / TODO**: Payments not integrated. No tests. No Clerk production instance configured.

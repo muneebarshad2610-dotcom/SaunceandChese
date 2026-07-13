@@ -57,6 +57,8 @@
 - [x] Admin check via Clerk public_metadata.role === 'admin' (no DB table)
 - [x] Items JSON serialization fix — explicit JSON.stringify() for pg JSONB column
 - [x] Order submission linked to authenticated Clerk user
+- [x] Custom auth middleware — replaced buggy @clerk/express with verifyToken() from @clerk/backend
+- [x] Null-token guards on all frontend getToken() calls
 - [ ] Payment processing integration
 
 ## Phase 5b: Order Management UI [Done]
@@ -77,12 +79,13 @@
 - [x] Clerk integration — installed `@clerk/react` v6, wraps app with `<ClerkProvider>`
 - [x] Sign-in / Sign-up UI — Clerk pre-built components (`SignInButton`, `SignUpButton`, `UserButton`)
 - [x] Protected checkout — cart drawer shows "Sign In to Checkout" if not authenticated
-- [x] Backend session verification — Clerk `requireAuth()` middleware on POST /api/orders
+- [x] Backend session verification — custom middleware using `verifyToken()` from `@clerk/backend` (replaced buggy @clerk/express)
 - [x] Orders stored with `clerk_user_id` — tied to authenticated user
 - [x] Order history page — users can view past orders from their account
 - [x] Admin role check via Clerk public_metadata
 - [ ] User profile page — Clerk provides UserButton but no custom profile page
 - [ ] Saved addresses and preferences — per-user settings not yet implemented
+- [ ] Clerk production instance — currently running on dev instance
 
 ## Phase 8: Polish & Quality [Done]
 
@@ -93,6 +96,7 @@
 - [x] Proper page title — "Sauce n' Cheese — Karachi's Gooiest Feast"
 - [x] Fix cheese-pull drag drift bug — using `useRef` + `info.point.y`
 - [x] Remove unused dependencies — `@google/genai`, `railway` removed
+- [x] Proper page routing — `/`, `/menu`, `/orders`, `/admin` via History API
 - [ ] Unit tests — not yet implemented
 - [ ] Accessibility audit — not yet conducted
 - [ ] PWA / service worker — not yet implemented

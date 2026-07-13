@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { clerkMiddleware, requireAuth } from '@clerk/express';
-import { createClerkClient } from '@clerk/backend';
+import { createClerkClient, verifyToken } from '@clerk/backend';
 import pool from './src/db/pool';
 import fs from 'fs';
 import path from 'path';
@@ -38,8 +37,37 @@ const allowedOrigins = process.env.CORS_ORIGINS
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: '10kb' }));
 
-// Clerk middleware — attaches req.auth to all routes
-app.use(clerkMiddleware({ publishableKey: clerkPublishableKey, secretKey: clerkSecretKey }));
+// ─── Custom auth middleware (uses @clerk/backend verifyToken directly) ─
+// We don't rely on @clerk/express middleware because v2.1.40 has a bug
+// where req.auth can be undefined instead of always being set.
+
+function extractToken(req: any): string | null {
+  const header = req.headers.authorization;
+  if (!header || typeof header !== 'string') return null;
+  if (!header.startsWith('Bearer ')) return null;
+  const token = header.slice(7).trim();
+  // Guard against getToken() returning null/undefined which becomes "Bearer null"
+  if (!token || token === 'null' || token === 'undefined' || token.length < 10) return null;
+  return token;
+}
+
+async function requireAuth(req: any, res: any, next: any) {
+  const token = extractToken(req);
+  if (!token) {
+    console.error('Auth failed: no valid token in Authorization header');
+    res.status(401).json({ error: 'Authentication required — no valid session token' });
+    return;
+  }
+
+  try {
+    const payload = await verifyToken(token, { secretKey: clerkSecretKey });
+    req.auth = { userId: payload.sub };
+    next();
+  } catch (err) {
+    console.error('Auth failed: token verification error —', err instanceof Error ? err.message : err);
+    res.status(401).json({ error: 'Authentication required — invalid or expired token' });
+  }
+}
 
 // ─── Auto-run schema + seed on startup ────────────────────────────
 
@@ -165,48 +193,54 @@ async function isAdminUser(clerkUserId: string): Promise<boolean> {
   }
 }
 
-// ─── Order Routes ─────────────────────────────────────────────────
+// ─── Order Routes ─────────────────────────────────────────────────  // POST /api/orders — submit order (requires authentication)
+  app.post('/api/orders', requireAuth, async (req, res) => {
+    try {
+      const auth = (req as any).auth;
+      if (!auth) {
+        console.error('POST /api/orders failed: req.auth is missing entirely. Token may be invalid or missing.');
+        res.status(401).json({ error: 'Authentication required — no valid session token' });
+        return;
+      }
 
-// POST /api/orders — submit order (requires authentication)
-app.post('/api/orders', requireAuth(), async (req, res) => {
-  try {
-    const { orderNumber, items, subtotal, customerName, customerPhone, deliveryAddress, deliveryNotes } = req.body;
-    const clerkUserId = (req as any).auth?.userId ?? null;
+      const clerkUserId = auth.userId ?? null;
 
-    if (!clerkUserId) {
-      console.error('POST /api/orders failed: clerkUserId is null/undefined — auth:', JSON.stringify((req as any).auth));
-      res.status(401).json({ error: 'Authentication required — user ID not found' });
-      return;
-    }
+      if (!clerkUserId) {
+        console.error('POST /api/orders failed: clerkUserId is null/undefined — auth:', JSON.stringify(auth));
+        res.status(401).json({ error: 'Authentication required — user ID not found' });
+        return;
+      }
 
-    // Normalize items if they arrive as a JSON string (safety for double-stringification)
-    const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
+      const { orderNumber, items, subtotal, customerName, customerPhone, deliveryAddress, deliveryNotes } = req.body;
 
-    if (!orderNumber || typeof orderNumber !== 'string') {
-      res.status(400).json({ error: 'Order number is required' });
-      return;
-    }
-    if (!Array.isArray(parsedItems) || parsedItems.length === 0) {
-      res.status(400).json({ error: 'At least one item is required' });
-      return;
-    }
-    if (typeof subtotal !== 'number' || subtotal <= 0) {
-      res.status(400).json({ error: 'Valid subtotal is required' });
-      return;
-    }
+      // Normalize items if they arrive as a JSON string (safety for double-stringification)
+      const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
 
-    if (!customerName || typeof customerName !== 'string' || customerName.trim().length < 1) {
-      res.status(400).json({ error: 'Customer name is required' });
-      return;
-    }
-    if (!customerPhone || typeof customerPhone !== 'string' || customerPhone.trim().length < 1) {
-      res.status(400).json({ error: 'Customer phone is required' });
-      return;
-    }
-    if (!deliveryAddress || typeof deliveryAddress !== 'string' || deliveryAddress.trim().length < 1) {
-      res.status(400).json({ error: 'Delivery address is required' });
-      return;
-    }
+      if (!orderNumber || typeof orderNumber !== 'string') {
+        res.status(400).json({ error: 'Order number is required' });
+        return;
+      }
+      if (!Array.isArray(parsedItems) || parsedItems.length === 0) {
+        res.status(400).json({ error: 'At least one item is required' });
+        return;
+      }
+      if (typeof subtotal !== 'number' || subtotal <= 0) {
+        res.status(400).json({ error: 'Valid subtotal is required' });
+        return;
+      }
+
+      if (!customerName || typeof customerName !== 'string' || customerName.trim().length < 1) {
+        res.status(400).json({ error: 'Customer name is required' });
+        return;
+      }
+      if (!customerPhone || typeof customerPhone !== 'string' || customerPhone.trim().length < 1) {
+        res.status(400).json({ error: 'Customer phone is required' });
+        return;
+      }
+      if (!deliveryAddress || typeof deliveryAddress !== 'string' || deliveryAddress.trim().length < 1) {
+        res.status(400).json({ error: 'Delivery address is required' });
+        return;
+      }
 
     // Serialize items to JSON string explicitly to avoid pg JSONB serialization edge cases
     let itemsJson: string;
@@ -240,7 +274,7 @@ app.post('/api/orders', requireAuth(), async (req, res) => {
 });
 
 // GET /api/orders — Get current user's orders (requires auth)
-app.get('/api/orders', requireAuth(), async (req, res) => {
+app.get('/api/orders', requireAuth, async (req, res) => {
   try {
     const clerkUserId = (req as any).auth.userId;
 
@@ -264,7 +298,7 @@ app.get('/api/orders', requireAuth(), async (req, res) => {
 });
 
 // GET /api/orders/admin — Get ALL orders (admin only)
-app.get('/api/orders/admin', requireAuth(), async (req, res) => {
+app.get('/api/orders/admin', requireAuth, async (req, res) => {
   try {
     const clerkUserId = (req as any).auth.userId;
     const admin = await isAdminUser(clerkUserId);
@@ -292,7 +326,7 @@ app.get('/api/orders/admin', requireAuth(), async (req, res) => {
 });
 
 // PATCH /api/orders/:id/status — Update order status (admin only)
-app.patch('/api/orders/:id/status', requireAuth(), async (req, res) => {
+app.patch('/api/orders/:id/status', requireAuth, async (req, res) => {
   try {
     const clerkUserId = (req as any).auth.userId;
     const admin = await isAdminUser(clerkUserId);
@@ -337,7 +371,7 @@ app.patch('/api/orders/:id/status', requireAuth(), async (req, res) => {
 });
 
 // GET /api/admin/check — Check if current user is admin
-app.get('/api/admin/check', requireAuth(), async (req, res) => {
+app.get('/api/admin/check', requireAuth, async (req, res) => {
   try {
     const clerkUserId = (req as any).auth.userId;
     const admin = await isAdminUser(clerkUserId);

@@ -16,7 +16,7 @@
 
 ### Component Structure
 
-- **Modular**: `App.tsx` is a thin orchestrator (~100 lines); UI split into `layout/`, `sections/`, `modals/`, `ui/` subdirectories under `src/components/`
+- **Modular**: `App.tsx` is a thin orchestrator with `renderShell()` shared layout; UI split into `layout/`, `sections/`, `modals/`, `ui/` subdirectories under `src/components/`
 - **State management**: Local `useState` hooks, with shared logic extracted into custom hooks (`useCart`, `useMenuItems`) under `src/hooks/`
 - **Side effects**: Contained within hooks — `useCart` handles localStorage persistence, `useMenuItems` handles API fetching
 - **Modals**: Each modal owns its own internal state via `useState` + `useEffect` for initialization; controlled via `isOpen`/`null` pattern from parent
@@ -45,14 +45,24 @@
 - **Empty state UI**: Every data-driven section has a polished empty/placeholder state (menu, deals, cart)
 - **localStorage persistence**: Cart saved/loaded via `JSON.parse/stringify` under key `snc_cart`
 - **API calls**: Fetch from Express backend (`/api/menu-items`, `/api/contact`, `/api/orders`) with Clerk Bearer token for protected endpoints
-- **External image URLs**: All images from `images.unsplash.com` with `referrerPolicy="no-referrer"`
+- **External image URLs**: All images from `images.unsplash.com` with `referrerPolicy=\"no-referrer\"`
 
 ### Clerk Auth Patterns
 
-- **`@clerk/react` v6** — use `Show` component (`when="signed-in"` / `when="signed-out"`) instead of v5's `SignedIn`/`SignedOut`
+- **`@clerk/react` v6** — use `Show` component (`when=\"signed-in\"` / `when=\"signed-out\"`) instead of v5's `SignedIn`/`SignedOut`
 - **Imports**: `ClerkProvider`, `Show`, `SignInButton`, `SignUpButton`, `UserButton`, `useAuth` from `@clerk/react`
-- **Server-side**: `clerkMiddleware()`, `requireAuth()` from `@clerk/express`
+- **Server-side**: Custom `requireAuth` middleware using `verifyToken(token, { secretKey })` from `@clerk/backend`. **Do NOT use `@clerk/express`** — its `clerkMiddleware()` and `requireAuth()` can produce `undefined` for `req.auth`.
 - **Protected API calls**: `useAuth().getToken()` → `Authorization: Bearer <token>`
+- **Always null-check `getToken()`**: `if (!token) throw/return` before making any API call
+
+### Page Routing
+
+- **History API** — no client-side routing library
+- Pages: `'home' | 'menu' | 'orders' | 'admin'`
+- `navigate(page)` sets state + calls `window.history.pushState()` for URL sync
+- `renderShell(children)` wraps all pages with Navbar, Footer, and shared modals
+- Home page shows brand sections (Hero, Story, Marquee, Locations)
+- Menu page shows product sections (MenuSection, DealsSection)
 
 ---
 
@@ -84,11 +94,13 @@
 
 13. **~~No order history page~~** **[FIXED]** — OrderHistory.tsx and AdminOrders.tsx built. Users can view past orders, admins can view all orders + update status.
 
-14. **No payment processing**: Checkout generates a mock order. No real payment is processed.
+14. **~~@clerk/express middleware bug~~** **[FIXED]** — Replaced with custom `verifyToken()` from `@clerk/backend`. The old `requireAuth()` could let requests through with `req.auth === undefined`.
 
 15. **No tests**: Zero unit, integration, or e2e tests exist.
 
 16. **No PWA support**: No service worker or manifest for offline/progressive capabilities.
+
+17. **No Clerk production instance**: Currently running on development instance. Should configure production instance for deployment.
 
 ---
 
@@ -97,4 +109,4 @@
 - **Never touch `.env` files** — environment variables managed in Railway dashboard or local `.env` (gitignored)
 - **Never restructure folders** — current `src/` structure is established; component splitting should be done carefully
 - **Never add new dependencies without asking** — justify any new dependency
-- **Always match existing patterns** for styling (Tailwind with custom utilities), animations (Motion), and Clerk auth (Show, useAuth)
+- **Always match existing patterns** for styling (Tailwind with custom utilities), animations (Motion), and Clerk auth (`verifyToken` from `@clerk/backend`)

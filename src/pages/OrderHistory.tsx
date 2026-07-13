@@ -39,8 +39,13 @@ export default function OrderHistory({ onNavigateHome }: Props) {
     setLoading(true);
     try {
       const token = await getToken();
-      const res = await fetch(`${API_BASE}/api/orders`, {
-        headers: { Authorization: `Bearer ${token}` },
+      if (!token) {
+        setError('Session expired. Please sign out and sign back in.');
+        setLoading(false);
+        return;
+      }
+      const res = await fetch(API_BASE + '/api/orders', {
+        headers: { Authorization: 'Bearer ' + token },
       });
       if (!res.ok) throw new Error('Failed to fetch orders');
       const data = await res.json();

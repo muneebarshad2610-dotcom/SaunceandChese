@@ -1,6 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, ArrowLeft, ShoppingBag } from 'lucide-react';
+import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { useAuth } from '@clerk/react';
 import ErrorBoundary from './components/ErrorBoundary';
 import Navbar from './components/layout/Navbar';
@@ -13,6 +11,7 @@ import LocationsSection from './components/sections/LocationsSection';
 import Footer from './components/layout/Footer';
 import QuickViewModal from './components/modals/QuickViewModal';
 import CartDrawer from './components/modals/CartDrawer';
+import CheckoutConfirmModal from './components/modals/CheckoutConfirmModal';
 import CheckoutForm from './components/modals/CheckoutForm';
 import OrderSuccessModal from './components/modals/OrderSuccessModal';
 import OrderHistory from './pages/OrderHistory';
@@ -23,7 +22,7 @@ import type { MenuItem, OrderDetails, CheckoutFormData } from './types';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
-type Page = 'home' | 'orders' | 'admin';
+type Page = 'home' | 'menu' | 'orders' | 'admin';
 
 export default function App() {
   const { isSignedIn, getToken } = useAuth();
@@ -45,6 +44,7 @@ export default function App() {
   // Page routing — sync with URL via History API
   const getPageFromPath = (): Page => {
     const path = window.location.pathname;
+    if (path === '/menu') return 'menu';
     if (path === '/orders') return 'orders';
     if (path === '/admin') return 'admin';
     return 'home';
@@ -78,8 +78,9 @@ export default function App() {
     (async () => {
       try {
         const token = await getToken();
-        const res = await fetch(`${API_BASE}/api/admin/check`, {
-          headers: { Authorization: `Bearer ${token}` },
+        if (!token) return;
+        const res = await fetch(API_BASE + '/api/admin/check', {
+          headers: { Authorization: 'Bearer ' + token },
         });
         if (res.ok) {
           const data = await res.json();
@@ -94,12 +95,12 @@ export default function App() {
   // Handlers
   const navigate = useCallback((page: Page) => {
     setCurrentPage(page);
-    // Close cart if navigating away
-    if (page !== 'home') {
+    // Close cart if navigating away from product pages
+    if (page !== 'home' && page !== 'menu') {
       setIsCartOpen(false);
     }
     // Update browser URL without reload
-    const url = page === 'home' ? '/' : `/${page}`;
+    const url = page === 'home' ? '/' : '/' + page;
     window.history.pushState({ page }, '', url);
   }, []);
 
@@ -144,11 +145,15 @@ export default function App() {
 
       try {
         const token = await getToken();
-        const res = await fetch(`${API_BASE}/api/orders`, {
+        if (!token) {
+          throw new Error('Session token is null. Please sign out and sign back in.');
+        }
+
+        const res = await fetch(API_BASE + '/api/orders', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
+            Authorization: 'Bearer ' + token,
           },
           body: JSON.stringify({
             orderNumber: orderId,
@@ -163,12 +168,12 @@ export default function App() {
 
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
-          throw new Error((errorData as { error?: string }).error || `Server error: ${res.status}`);
+          throw new Error((errorData as { error?: string }).error || 'Server error: ' + res.status);
         }
       } catch (err) {
         console.error('Order submission failed:', err);
         setCheckoutLoading(false);
-        alert('Failed to place order. Please try again.');
+        alert(err instanceof Error ? err.message : 'Failed to place order. Please try again.');
         return;
       }
 
@@ -187,7 +192,7 @@ export default function App() {
 
   const handleContactSubmit = useCallback(
     async (data: { name: string; email: string; message: string }) => {
-      const res = await fetch(`${API_BASE}/api/contact`, {
+      const res = await fetch(API_BASE + '/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -200,54 +205,8 @@ export default function App() {
     []
   );
 
-  // Render the appropriate page
-  if (currentPage === 'orders') {
-    return (
-      <ErrorBoundary>
-        <div className="min-h-screen bg-[#FDF5E6] text-[#1A1A1A] font-sans overflow-x-hidden flex flex-col">
-          <Navbar
-            cartItemCount={cartItemCount}
-            onCartOpen={() => setIsCartOpen(true)}
-            currentPage={currentPage}
-            onNavigate={navigate}
-            isAdmin={isAdmin}
-          />
-          <OrderHistory onNavigateHome={() => navigate('home')} />
-          <CartDrawer
-            isOpen={isCartOpen}
-            cart={cart}
-            cartItemCount={cartItemCount}
-            cartSubtotal={cartSubtotal}
-            onClose={() => setIsCartOpen(false)}
-            onRemoveItem={removeItem}
-            onCheckout={handleCheckout}
-            checkoutLoading={checkoutLoading}
-            isSignedIn={!!isSignedIn}
-          />
-        </div>
-      </ErrorBoundary>
-    );
-  }
-
-  if (currentPage === 'admin') {
-    return (
-      <ErrorBoundary>
-        <div className="min-h-screen bg-[#FDF5E6] text-[#1A1A1A] font-sans overflow-x-hidden flex flex-col">
-          <Navbar
-            cartItemCount={cartItemCount}
-            onCartOpen={() => setIsCartOpen(true)}
-            currentPage={currentPage}
-            onNavigate={navigate}
-            isAdmin={isAdmin}
-          />
-          <AdminOrders onNavigateHome={() => navigate('home')} />
-        </div>
-      </ErrorBoundary>
-    );
-  }
-
-  // Home page
-  return (
+  // Render layout shell shared by all pages (navbar + modals)
+  const renderShell = (children: ReactNode) => (
     <ErrorBoundary>
       <div className="min-h-screen bg-[#FDF5E6] text-[#1A1A1A] font-sans selection:bg-[#FFB81C] selection:text-[#C41E3A] overflow-x-hidden flex flex-col">
         <Navbar
@@ -258,52 +217,11 @@ export default function App() {
           isAdmin={isAdmin}
         />
 
-        <main className="flex-1">
-          <Hero />
-          <StorySection />
-
-          {error ? (
-            <section className="py-20 px-6 text-center">
-              <div className="max-w-lg mx-auto bg-white border-4 border-[#C41E3A] rounded-[36px] p-10 shadow-md">
-                <p className="font-retro text-3xl text-[#C41E3A] uppercase tracking-wide mb-3">
-                  🚫 Couldn't Reach the Kitchen
-                </p>
-                <p className="text-sm text-[#C41E3A]/70 leading-relaxed">
-                  Our menu server is taking a break. Please check your connection and try
-                  again later. We're still gooey at heart.
-                </p>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="mt-6 bg-[#C41E3A] text-white px-8 py-3 rounded-full font-black uppercase tracking-wider text-xs hover:brightness-110 transition-all cursor-pointer"
-                >
-                  Retry Connection
-                </button>
-              </div>
-            </section>
-          ) : (
-            <>
-              <MenuSection
-                items={menuItems}
-                loading={loading}
-                onQuickView={openQuickView}
-                onQuickAdd={handleQuickAdd}
-              />
-              <DealsSection
-                items={menuItems}
-                loading={loading}
-                onQuickView={openQuickView}
-                onQuickAdd={handleQuickAdd}
-              />
-            </>
-          )}
-
-          <InstagramMarquee />
-          <LocationsSection onSubmitContact={handleContactSubmit} />
-        </main>
+        <main className="flex-1">{children}</main>
 
         <Footer />
 
-        {/* Modals */}
+        {/* Modals — available on all pages */}
         <QuickViewModal
           item={quickViewItem}
           onClose={() => setQuickViewItem(null)}
@@ -325,60 +243,11 @@ export default function App() {
           isSignedIn={!!isSignedIn}
         />
 
-        {/* Checkout Confirmation Prompt */}
-        <AnimatePresence>
-          {showCheckoutConfirm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={handleCancelCheckout}
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              />
-              <motion.div
-                initial={{ scale: 0.9, y: 20, opacity: 0 }}
-                animate={{ scale: 1, y: 0, opacity: 1 }}
-                exit={{ scale: 0.9, y: 20, opacity: 0 }}
-                transition={{ type: 'spring', damping: 25 }}
-                className="relative bg-[#FDF5E6] border-4 border-[#C41E3A] rounded-[40px] max-w-sm w-full p-8 shadow-2xl z-10 text-center"
-              >
-                <div className="w-16 h-16 bg-[#FFB81C] rounded-full flex items-center justify-center mx-auto border-4 border-[#C41E3A] mb-5">
-                  <ShoppingBag className="w-8 h-8 text-[#C41E3A]" />
-                </div>
-
-                <h3 className="font-retro text-3xl text-[#C41E3A] uppercase tracking-wide leading-none mb-3">
-                  Almost There!
-                </h3>
-                <p className="font-handwritten text-xl text-[#FFB81C] mb-4">You're one step away...</p>
-
-                <div className="bg-white border-2 border-[#C41E3A]/15 rounded-2xl p-4 mb-6 text-left">
-                  <p className="text-sm text-[#C41E3A]/80 leading-relaxed">
-                    You'll be taken to a <strong className="text-[#C41E3A]">delivery details</strong> form to enter your
-                    name, phone, and delivery address before placing the order.
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <button
-                    onClick={handleProceedToCheckout}
-                    className="w-full bg-[#FFB81C] text-[#C41E3A] font-black py-3.5 rounded-2xl uppercase tracking-widest text-sm shadow-lg border-2 border-[#C41E3A] hover:bg-[#ffa71c] transition-all cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    Proceed to Delivery Details
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={handleCancelCheckout}
-                    className="text-xs font-black uppercase tracking-wider text-[#C41E3A]/50 hover:text-[#C41E3A] transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    Go Back to Cart
-                  </button>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
+        <CheckoutConfirmModal
+          isOpen={showCheckoutConfirm}
+          onProceed={handleProceedToCheckout}
+          onCancel={handleCancelCheckout}
+        />
 
         <CheckoutForm
           isOpen={isCheckoutOpen}
@@ -386,7 +255,7 @@ export default function App() {
           cartSubtotal={cartSubtotal}
           onClose={() => {
             setIsCheckoutOpen(false);
-            setIsCartOpen(true); // Re-open cart if they cancel
+            setIsCartOpen(true);
           }}
           onSubmit={handleConfirmCheckout}
           loading={checkoutLoading}
@@ -399,5 +268,71 @@ export default function App() {
         />
       </div>
     </ErrorBoundary>
+  );
+
+  // ─── Page: Orders ────────────────────────────────────────
+  if (currentPage === 'orders') {
+    return renderShell(
+      <OrderHistory onNavigateHome={() => navigate('home')} />
+    );
+  }
+
+  // ─── Page: Admin ─────────────────────────────────────────
+  if (currentPage === 'admin') {
+    return renderShell(
+      <AdminOrders onNavigateHome={() => navigate('home')} />
+    );
+  }
+
+  // ─── Page: Menu ─────────────────────────────────────────
+  if (currentPage === 'menu') {
+    return renderShell(
+      <>
+        {error ? (
+          <section className="py-20 px-6 text-center">
+            <div className="max-w-lg mx-auto bg-white border-4 border-[#C41E3A] rounded-[36px] p-10 shadow-md">
+              <p className="font-retro text-3xl text-[#C41E3A] uppercase tracking-wide mb-3">
+                {'\u{1F6AB}'} Couldn't Reach the Kitchen
+              </p>
+              <p className="text-sm text-[#C41E3A]/70 leading-relaxed">
+                Our menu server is taking a break. Please check your connection and try
+                again later. We're still gooey at heart.
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-6 bg-[#C41E3A] text-white px-8 py-3 rounded-full font-black uppercase tracking-wider text-xs hover:brightness-110 transition-all cursor-pointer"
+              >
+                Retry Connection
+              </button>
+            </div>
+          </section>
+        ) : (
+          <>
+            <MenuSection
+              items={menuItems}
+              loading={loading}
+              onQuickView={openQuickView}
+              onQuickAdd={handleQuickAdd}
+            />
+            <DealsSection
+              items={menuItems}
+              loading={loading}
+              onQuickView={openQuickView}
+              onQuickAdd={handleQuickAdd}
+            />
+          </>
+        )}
+      </>
+    );
+  }
+
+  // ─── Page: Home ──────────────────────────────────────────
+  return renderShell(
+    <>
+      <Hero onNavigateMenu={() => navigate('menu')} />
+      <StorySection />
+      <InstagramMarquee />
+      <LocationsSection onSubmitContact={handleContactSubmit} />
+    </>
   );
 }

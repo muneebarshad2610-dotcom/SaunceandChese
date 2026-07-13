@@ -46,8 +46,13 @@ export default function AdminOrders({ onNavigateHome }: Props) {
     if (!isSignedIn) return;
     try {
       const token = await getToken();
-      const res = await fetch(`${API_BASE}/api/admin/check`, {
-        headers: { Authorization: `Bearer ${token}` },
+      if (!token) {
+        setIsAdmin(false);
+        setAdminCheckDone(true);
+        return;
+      }
+      const res = await fetch(API_BASE + '/api/admin/check', {
+        headers: { Authorization: 'Bearer ' + token },
       });
       if (!res.ok) throw new Error('Failed to check admin');
       const data = await res.json();
@@ -71,8 +76,13 @@ export default function AdminOrders({ onNavigateHome }: Props) {
     setLoading(true);
     try {
       const token = await getToken();
-      const res = await fetch(`${API_BASE}/api/orders/admin`, {
-        headers: { Authorization: `Bearer ${token}` },
+      if (!token) {
+        setError('Session expired. Please sign out and sign back in.');
+        setLoading(false);
+        return;
+      }
+      const res = await fetch(API_BASE + '/api/orders/admin', {
+        headers: { Authorization: 'Bearer ' + token },
       });
       if (!res.ok) throw new Error('Failed to fetch orders');
       const data = await res.json();
@@ -99,11 +109,16 @@ export default function AdminOrders({ onNavigateHome }: Props) {
     setUpdatingId(orderId);
     try {
       const token = await getToken();
-      const res = await fetch(`${API_BASE}/api/orders/${orderId}/status`, {
+      if (!token) {
+        alert('Session expired. Please sign out and sign back in.');
+        setUpdatingId(null);
+        return;
+      }
+      const res = await fetch(API_BASE + '/api/orders/' + orderId + '/status', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: 'Bearer ' + token,
         },
         body: JSON.stringify({ status: newStatus }),
       });

@@ -1,6 +1,10 @@
 import { motion } from 'motion/react';
 
-export default function Hero() {
+interface HeroProps {
+  onNavigateMenu: () => void;
+}
+
+export default function Hero({ onNavigateMenu }: HeroProps) {
   return (
     <section className="relative py-16 md:py-24 px-6 md:px-12 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center overflow-hidden max-w-7xl mx-auto">
       {/* Left: copy */}
@@ -22,18 +26,18 @@ export default function Hero() {
         </p>
 
         <div className="flex flex-wrap gap-4 pt-2">
-          <a
-            href="#menu"
-            className="bg-[#FFB81C] text-[#C41E3A] px-8 py-4.5 rounded-2xl text-lg md:text-xl font-black uppercase tracking-widest retro-shadow border-4 border-[#C41E3A] hover:bg-[#ffa71c] hover:-translate-y-1 transition-all"
+          <button
+            onClick={onNavigateMenu}
+            className="bg-[#FFB81C] text-[#C41E3A] px-8 py-4.5 rounded-2xl text-lg md:text-xl font-black uppercase tracking-widest retro-shadow border-4 border-[#C41E3A] hover:bg-[#ffa71c] hover:-translate-y-1 transition-all cursor-pointer"
           >
             Sink Your Teeth In
-          </a>
-          <a
-            href="#hot-deals"
-            className="border-4 border-[#C41E3A] text-[#C41E3A] px-8 py-4.5 rounded-2xl text-lg md:text-xl font-black uppercase tracking-widest hover:bg-[#C41E3A] hover:text-white transition-all bg-[#FFB81C]/10"
+          </button>
+          <button
+            onClick={onNavigateMenu}
+            className="border-4 border-[#C41E3A] text-[#C41E3A] px-8 py-4.5 rounded-2xl text-lg md:text-xl font-black uppercase tracking-widest hover:bg-[#C41E3A] hover:text-white transition-all bg-[#FFB81C]/10 cursor-pointer"
           >
-            Hot Deals 🔥
-          </a>
+            Hot Deals &#x1F525;
+          </button>
         </div>
       </div>
 

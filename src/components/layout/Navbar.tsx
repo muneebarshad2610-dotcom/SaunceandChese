@@ -7,21 +7,26 @@ import {
   UserButton,
 } from '@clerk/react';
 
+type Page = 'home' | 'menu' | 'orders' | 'admin';
+
 interface NavbarProps {
   cartItemCount: number;
   onCartOpen: () => void;
-  currentPage: 'home' | 'orders' | 'admin';
-  onNavigate: (page: 'home' | 'orders' | 'admin') => void;
+  currentPage: Page;
+  onNavigate: (page: Page) => void;
   isAdmin?: boolean;
 }
+
+const NAV_LINKS: { page: Page; label: string }[] = [
+  { page: 'home', label: 'Home' },
+  { page: 'menu', label: 'Menu' },
+];
 
 export default function Navbar({ cartItemCount, onCartOpen, currentPage, onNavigate, isAdmin }: NavbarProps) {
   return (
     <nav
       id="site-nav"
-      className={`sticky top-0 z-40 bg-[#FDF5E6]/95 backdrop-blur-md border-b-4 border-[#C41E3A] py-4 px-6 md:px-12 flex justify-between items-center shadow-sm ${
-        currentPage !== 'home' ? 'relative' : ''
-      }`}
+      className="sticky top-0 z-40 bg-[#FDF5E6]/95 backdrop-blur-md border-b-4 border-[#C41E3A] py-4 px-6 md:px-12 flex justify-between items-center shadow-sm"
     >
       {/* Brand */}
       <button
@@ -42,15 +47,20 @@ export default function Navbar({ cartItemCount, onCartOpen, currentPage, onNavig
       </button>
 
       {/* Desktop nav */}
-      <div className="hidden md:flex items-center gap-6 font-black uppercase tracking-wider text-xs text-[#C41E3A]">
-        {currentPage === 'home' && (
-          <>
-            <a href="#menu" className="hover:text-[#FFB81C] transition-colors">Menu</a>
-            <a href="#hot-deals" className="hover:text-[#FFB81C] transition-colors">Hot Deals</a>
-            <a href="#story" className="hover:text-[#FFB81C] transition-colors">Our Story</a>
-            <a href="#locations" className="hover:text-[#FFB81C] transition-colors">Locations</a>
-          </>
-        )}
+      <div className="hidden md:flex items-center gap-4 font-black uppercase tracking-wider text-xs text-[#C41E3A]">
+        {NAV_LINKS.map(({ page, label }) => (
+          <button
+            key={page}
+            onClick={() => onNavigate(page)}
+            className={`transition-colors cursor-pointer ${
+              currentPage === page
+                ? 'text-[#FFB81C]'
+                : 'hover:text-[#FFB81C]'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
 
         <Show when="signed-in">
           <button
@@ -122,6 +132,16 @@ export default function Navbar({ cartItemCount, onCartOpen, currentPage, onNavig
 
       {/* Mobile */}
       <div className="flex md:hidden items-center gap-2">
+        <button
+          onClick={() => onNavigate('menu')}
+          className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded transition-all cursor-pointer ${
+            currentPage === 'menu'
+              ? 'bg-[#C41E3A] text-white'
+              : 'text-[#C41E3A] hover:bg-[#C41E3A]/10'
+          }`}
+        >
+          Menu
+        </button>
         <Show when="signed-in">
           <button
             onClick={() => onNavigate('orders')}
@@ -152,11 +172,6 @@ export default function Navbar({ cartItemCount, onCartOpen, currentPage, onNavig
               Sign In
             </button>
           </SignInButton>
-          <SignUpButton mode="modal">
-            <button className="text-[10px] font-black uppercase tracking-wider bg-[#FFB81C] text-[#C41E3A] border-2 border-[#C41E3A] px-3 py-1 rounded-full hover:bg-[#ffa71c] transition-all cursor-pointer">
-              Sign Up
-            </button>
-          </SignUpButton>
         </Show>
         <button
           onClick={onCartOpen}
