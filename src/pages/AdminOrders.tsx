@@ -138,11 +138,13 @@ export default function AdminOrders({ onNavigateHome }: Props) {
   // Filter & search
   const filteredOrders = orders.filter((order) => {
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    const matchesSearch =
-      !searchQuery ||
-      order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customerPhone.includes(searchQuery);
+            const matchesSearch =
+              !searchQuery ||
+              order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              (order.customerName?.toLowerCase()?.includes(searchQuery.toLowerCase()) ?? false) ||
+              (order.customerPhone?.includes(searchQuery) ?? false) ||
+              (order.guestName?.toLowerCase()?.includes(searchQuery.toLowerCase()) ?? false) ||
+              (order.tableId?.toString()?.includes(searchQuery) ?? false);
     return matchesStatus && matchesSearch;
   });
 
@@ -238,17 +240,17 @@ export default function AdminOrders({ onNavigateHome }: Props) {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-8">
-        {/* Search */}
-        <div className="relative mb-6">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#C41E3A]/40" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by order #, customer name, or phone..."
-            className="w-full bg-white border-2 border-[#C41E3A]/15 rounded-2xl pl-11 pr-4 py-3 text-sm font-medium placeholder-[#C41E3A]/30 focus:border-[#C41E3A] outline-none transition-all text-[#1A1A1A]"
-          />
-        </div>
+                         {/* Search */}
+         <div className="relative mb-6">
+           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#C41E3A]/40" />
+           <input
+             type="text"
+             value={searchQuery}
+             onChange={(e) => setSearchQuery(e.target.value)}
+             placeholder="Search by order #, customer name, phone, or table..."
+             className="w-full bg-white border-2 border-[#C41E3A]/15 rounded-2xl pl-11 pr-4 py-3 text-sm font-medium placeholder-[#C41E3A]/30 focus:border-[#C41E3A] outline-none transition-all text-[#1A1A1A]"
+           />
+         </div>
 
         {/* Loading */}
         {loading && (
@@ -319,9 +321,9 @@ export default function AdminOrders({ onNavigateHome }: Props) {
                           {statusConfig.label}
                         </span>
                       </div>
-                      <p className="text-[11px] text-[#C41E3A]/50 mt-0.5 truncate">
-                        {order.customerName} &middot; {order.customerPhone}
-                      </p>
+                       <p className="text-[11px] text-[#C41E3A]/50 mt-0.5 truncate">
+                         {order.guestName ? `Table ${order.tableId} - ${order.guestName}` : `${order.customerName} &middot; ${order.customerPhone}`}
+                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
@@ -379,30 +381,56 @@ export default function AdminOrders({ onNavigateHome }: Props) {
                           </div>
                         )}
 
-                        {/* Details Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                          <div className="bg-[#FDF5E6] p-3 rounded-xl border border-[#C41E3A]/5 space-y-1.5">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-[#C41E3A]/40">Customer</span>
-                            <div className="flex items-center gap-1.5">
-                              <User className="w-3 h-3 text-[#C41E3A]/60" />
-                              <span className="font-medium text-[#1A1A1A]">{order.customerName}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <Phone className="w-3 h-3 text-[#C41E3A]/60" />
-                              <span className="text-[#1A1A1A]">{order.customerPhone}</span>
-                            </div>
-                          </div>
-                          <div className="md:col-span-2 bg-[#FDF5E6] p-3 rounded-xl border border-[#C41E3A]/5 space-y-1.5">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-[#C41E3A]/40">Delivery</span>
-                            <div className="flex items-start gap-1.5">
-                              <MapPin className="w-3 h-3 text-[#C41E3A]/60 mt-0.5 flex-shrink-0" />
-                              <span className="text-[#1A1A1A]">{order.deliveryAddress}</span>
-                            </div>
-                            {order.deliveryNotes && (
-                              <p className="text-[#C41E3A]/60 italic">"{order.deliveryNotes}"</p>
-                            )}
-                          </div>
-                        </div>
+                         {/* Details Grid */}
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                           <div className="bg-[#FDF5E6] p-3 rounded-xl border border-[#C41E3A]/5 space-y-1.5">
+                             <span className="text-[10px] font-black uppercase tracking-widest text-[#C41E3A]/40">Customer</span>
+                             {order.guestName ? (
+                               <>
+                                 <div className="flex items-center gap-1.5">
+                                   <MapPin className="w-3 h-3 text-[#C41E3A]/60" />
+                                   <span className="font-medium text-[#1A1A1A]">Table {order.tableId}</span>
+                                 </div>
+                                 <div className="flex items-center gap-1.5">
+                                   <User className="w-3 h-3 text-[#C41E3A]/60" />
+                                   <span className="text-[#1A1A1A]">{order.guestName}</span>
+                                 </div>
+                               </>
+                             ) : (
+                               <>
+                                 <div className="flex items-center gap-1.5">
+                                   <User className="w-3 h-3 text-[#C41E3A]/60" />
+                                   <span className="font-medium text-[#1A1A1A]">{order.customerName}</span>
+                                 </div>
+                                 <div className="flex items-center gap-1.5">
+                                   <Phone className="w-3 h-3 text-[#C41E3A]/60" />
+                                   <span className="text-[#1A1A1A]">{order.customerPhone}</span>
+                                 </div>
+                               </>
+                             )}
+                           </div>
+                           <div className="md:col-span-2 bg-[#FDF5E6] p-3 rounded-xl border border-[#C41E3A]/5 space-y-1.5">
+                             <span className="text-[10px] font-black uppercase tracking-widest text-[#C41E3A]/40">
+                               {order.guestName ? 'Table Order' : 'Delivery'}
+                             </span>
+                             {order.guestName ? (
+                               <div className="flex items-center gap-1.5">
+                                 <MapPin className="w-3 h-3 text-[#C41E3A]/60" />
+                                 <span className="text-[#1A1A1A]">Table {order.tableId}</span>
+                               </div>
+                             ) : (
+                               <>
+                                 <div className="flex items-start gap-1.5">
+                                   <MapPin className="w-3 h-3 text-[#C41E3A]/60 mt-0.5 flex-shrink-0" />
+                                   <span className="text-[#1A1A1A]">{order.deliveryAddress}</span>
+                                 </div>
+                                 {order.deliveryNotes && (
+                                   <p className="text-[#C41E3A]/60 italic">"{order.deliveryNotes}"</p>
+                                 )}
+                               </>
+                             )}
+                           </div>
+                         </div>
 
                         {/* Items */}
                         <div>

@@ -30,6 +30,7 @@ export default function TableOrder({ onNavigateHome }: { onNavigateHome: () => v
   const [showCart, setShowCart] = useState(false);
   const [cart, setCart] = useState<CartLineItem[]>([]);
   const [guestName, setGuestName] = useState('');
+  const [editingGuestName, setEditingGuestName] = useState(false);
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
@@ -107,6 +108,7 @@ export default function TableOrder({ onNavigateHome }: { onNavigateHome: () => v
   const handlePlaceOrder = async (e: FormEvent) => {
     e.preventDefault();
     if (!table || !guestName.trim() || cart.length === 0) return;
+    setEditingGuestName(false);
     setSubmitting(true);
     try {
       const res = await fetch(API_BASE + '/api/orders/table', {
@@ -231,30 +233,32 @@ export default function TableOrder({ onNavigateHome }: { onNavigateHome: () => v
             </div>
           </div>
 
-          {/* Guest Name */}
-          <div className="bg-white/10 rounded-2xl p-4 border border-white/10">
-            {!guestName ? (
-              <div className="flex items-center gap-3">
-                <User className="w-5 h-5 text-white/40" />
-                <input
-                  type="text"
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  placeholder="Enter your name to start ordering..."
-                  className="flex-1 bg-transparent text-white placeholder-white/40 text-sm outline-none"
-                  maxLength={50}
-                />
-              </div>
-            ) : (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-[#FFB81C]" />
-                  <span className="text-sm font-medium">Hi, <span className="text-[#FFB81C] font-black">{guestName}</span></span>
-                </div>
-                <button onClick={() => setGuestName('')} className="text-[10px] text-white/40 hover:text-white/70 uppercase tracking-wider font-black cursor-pointer">Change</button>
-              </div>
-            )}
-          </div>
+           {/* Guest Name */}
+           <div className="bg-white/10 rounded-2xl p-4 border border-white/10">
+             {editingGuestName ? (
+               <div className="flex items-center gap-3">
+                 <User className="w-5 h-5 text-white/40" />
+                 <input
+                   type="text"
+                   value={guestName}
+                   onChange={(e) => setGuestName(e.target.value)}
+                   placeholder="Enter your name to start ordering..."
+                   className="flex-1 bg-transparent text-white placeholder-white/40 text-sm outline-none"
+                   maxLength={50}
+                   autoFocus
+                 />
+                 <button onClick={() => { setEditingGuestName(false); if (!guestName.trim()) setGuestName(''); }} className="text-[10px] text-white/40 hover:text-white/70 uppercase tracking-wider font-black cursor-pointer">Done</button>
+               </div>
+             ) : (
+               <div className="flex items-center justify-between">
+                 <div className="flex items-center gap-2">
+                   <User className="w-4 h-4 text-[#FFB81C]" />
+                   <span className="text-sm font-medium">Hi, <span className="text-[#FFB81C] font-black">{guestName || 'Guest'}</span></span>
+                 </div>
+                 <button onClick={() => setEditingGuestName(true)} className="text-[10px] text-white/40 hover:text-white/70 uppercase tracking-wider font-black cursor-pointer">Change</button>
+               </div>
+             )}
+           </div>
         </div>
       </div>
 
@@ -387,11 +391,11 @@ export default function TableOrder({ onNavigateHome }: { onNavigateHome: () => v
                     <span className="font-retro text-lg text-white uppercase">Total</span>
                     <span className="font-black text-2xl text-[#FFB81C]">Rs. {cartTotal}</span>
                   </div>
-                  <button onClick={() => { setShowCart(false); setShowOrderForm(true); }}
-                    disabled={!guestName}
-                    className="w-full bg-[#FFB81C] text-[#C41E3A] font-black py-4 rounded-2xl uppercase tracking-widest text-sm hover:brightness-110 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                    {guestName ? 'Place Order' : 'Enter Your Name First'}
-                  </button>
+                   <button onClick={() => { setShowCart(false); setShowOrderForm(true); }}
+                     disabled={!guestName.trim()}
+                     className="w-full bg-[#FFB81C] text-[#C41E3A] font-black py-4 rounded-2xl uppercase tracking-widest text-sm hover:brightness-110 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                     {guestName.trim() ? 'Place Order' : 'Enter Your Name First'}
+                   </button>
                 </>
               )}
             </motion.div>

@@ -39,14 +39,17 @@ export interface OrderDetails {
 export interface Order {
   id: number;
   orderNumber: string;
-  clerkUserId: string;
-  customerName: string;
-  customerPhone: string;
-  deliveryAddress: string;
+  clerkUserId: string | null;
+  customerName: string | null;
+  customerPhone: string | null;
+  deliveryAddress: string | null;
   deliveryNotes: string | null;
   items: CartItem[];
   subtotal: number;
   status: OrderStatus;
+  tableId: number | null;
+  guestName: string | null;
+  splitBill: boolean | null;
   createdAt: string;
   updatedAt: string;
 }

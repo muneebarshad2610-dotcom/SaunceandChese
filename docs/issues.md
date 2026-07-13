@@ -1,4 +1,4 @@
-if i click to change name in Table ordering i cant type only click one letter smhow
-after order is placed of table the order has no idea that which table to go include in orders aswell 
+[FIXED] Guest name input in Table ordering - was disappearing after typing one character due to conditional rendering. Now uses separate `editingGuestName` state.
+[FIXED] Table orders not showing table info in admin dashboard - admin orders API now includes `table_id` and `guest_name` fields.
 
 # Session freebuff --continue 2026-07-13T18-18-50.817Z

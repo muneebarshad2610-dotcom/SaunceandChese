@@ -320,7 +320,7 @@ app.get('/api/orders', requireAuth, async (req, res) => {
       `SELECT id, order_number AS "orderNumber", clerk_user_id AS "clerkUserId",
               customer_name AS "customerName", customer_phone AS "customerPhone",
               delivery_address AS "deliveryAddress", delivery_notes AS "deliveryNotes",
-              items, subtotal, status,
+              items, subtotal, status, table_id AS "tableId", guest_name AS "guestName", split_bill AS "splitBill",
               created_at AS "createdAt", updated_at AS "updatedAt"
        FROM orders
        WHERE clerk_user_id = $1
@@ -350,7 +350,7 @@ app.get('/api/orders/admin', requireAuth, async (req, res) => {
       `SELECT id, order_number AS "orderNumber", clerk_user_id AS "clerkUserId",
               customer_name AS "customerName", customer_phone AS "customerPhone",
               delivery_address AS "deliveryAddress", delivery_notes AS "deliveryNotes",
-              items, subtotal, status,
+              items, subtotal, status, table_id AS "tableId", guest_name AS "guestName", split_bill AS "splitBill",
               created_at AS "createdAt", updated_at AS "updatedAt"
        FROM orders
        ORDER BY created_at DESC`

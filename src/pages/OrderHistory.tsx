@@ -246,32 +246,52 @@ export default function OrderHistory({ onNavigateHome }: Props) {
                           })}
                         </div>
 
-                        {/* Customer Info */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                          <div className="bg-[#FDF5E6] p-3 rounded-xl border border-[#C41E3A]/5 space-y-1.5">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-[#C41E3A]/40">Contact</span>
-                            <div className="flex items-center gap-1.5">
-                              <User className="w-3 h-3 text-[#C41E3A]/60" />
-                              <span className="font-medium text-[#1A1A1A]">{order.customerName}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <Phone className="w-3 h-3 text-[#C41E3A]/60" />
-                              <span className="text-[#1A1A1A]">{order.customerPhone}</span>
-                            </div>
-                          </div>
-                          <div className="bg-[#FDF5E6] p-3 rounded-xl border border-[#C41E3A]/5 space-y-1.5">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-[#C41E3A]/40">Delivery</span>
-                            <div className="flex items-start gap-1.5">
-                              <MapPin className="w-3 h-3 text-[#C41E3A]/60 mt-0.5 flex-shrink-0" />
-                              <span className="text-[#1A1A1A]">{order.deliveryAddress}</span>
-                            </div>
-                            {order.deliveryNotes && (
-                              <p className="text-[#C41E3A]/60 italic mt-1">
-                                "{order.deliveryNotes}"
-                              </p>
-                            )}
-                          </div>
-                        </div>
+                         {/* Customer Info */}
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                           <div className="bg-[#FDF5E6] p-3 rounded-xl border border-[#C41E3A]/5 space-y-1.5">
+                             <span className="text-[10px] font-black uppercase tracking-widest text-[#C41E3A]/40">Contact</span>
+                             {order.guestName ? (
+                               <div className="flex items-center gap-1.5">
+                                 <MapPin className="w-3 h-3 text-[#C41E3A]/60" />
+                                 <span className="font-medium text-[#1A1A1A]">Table {order.tableId}</span>
+                               </div>
+                             ) : (
+                               <>
+                                 <div className="flex items-center gap-1.5">
+                                   <User className="w-3 h-3 text-[#C41E3A]/60" />
+                                   <span className="font-medium text-[#1A1A1A]">{order.customerName}</span>
+                                 </div>
+                                 <div className="flex items-center gap-1.5">
+                                   <Phone className="w-3 h-3 text-[#C41E3A]/60" />
+                                   <span className="text-[#1A1A1A]">{order.customerPhone}</span>
+                                 </div>
+                               </>
+                             )}
+                           </div>
+                           <div className="bg-[#FDF5E6] p-3 rounded-xl border border-[#C41E3A]/5 space-y-1.5">
+                             <span className="text-[10px] font-black uppercase tracking-widest text-[#C41E3A]/40">
+                               {order.guestName ? 'Table Order' : 'Delivery'}
+                             </span>
+                             {order.guestName ? (
+                               <div className="flex items-center gap-1.5">
+                                 <User className="w-3 h-3 text-[#C41E3A]/60" />
+                                 <span className="text-[#1A1A1A]">{order.guestName}</span>
+                               </div>
+                             ) : (
+                               <>
+                                 <div className="flex items-start gap-1.5">
+                                   <MapPin className="w-3 h-3 text-[#C41E3A]/60 mt-0.5 flex-shrink-0" />
+                                   <span className="text-[#1A1A1A]">{order.deliveryAddress}</span>
+                                 </div>
+                                 {order.deliveryNotes && (
+                                   <p className="text-[#C41E3A]/60 italic mt-1">
+                                     "{order.deliveryNotes}"
+                                   </p>
+                                 )}
+                               </>
+                             )}
+                           </div>
+                         </div>
 
                         {/* Items */}
                         <div>

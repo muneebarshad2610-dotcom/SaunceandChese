@@ -62,12 +62,18 @@
   - QuickViewModal shows dynamically managed add-ons
   - Tabbed admin dashboard with access control
 
-- **What's broken / unfinished**:
+  - **What's broken / unfinished**:
   - **Payments** — no payment processor integrated (mock checkout only)
   - **User profile page** — Clerk provides basic UserButton, no custom page
   - **Tests** — no unit, integration, or e2e tests
   - **Clerk production instance** — currently running on dev instance
   - **Cart addon pricing** — useCart.ts still uses hardcoded constants for cart pricing, may differ from dynamically displayed prices
+
+## Session 10 — [2026-07-14] — Bug fixes for table ordering
+
+- **Fixed guest name input issue** in TableOrder.tsx: The input field was conditionally rendered based on `guestName` state, causing it to disappear after typing one character. Replaced with separate `editingGuestName` state for proper input visibility control.
+- **Fixed table order display issue** in admin dashboard: Admin orders API endpoint now includes `table_id`, `guest_name`, and `split_bill` fields in the response, so table orders properly show which table they belong to.
+- **Files touched**: src/pages/TableOrder.tsx, server.ts, docs/issues.md
 
 ## Session 9 — [2026-07-14] — Tableside QR ordering + Kitchen display system
 
@@ -112,3 +118,4 @@
   - **Printable kitchen tickets** — kitchen orders shown on screen, no print layout
   - **Payments** — still not integrated
   - **Cart addon pricing** — useCart.ts still uses hardcoded constants
+freebuff --continue 2026-07-13T18-18-50.817Z
