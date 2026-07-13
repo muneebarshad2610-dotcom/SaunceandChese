@@ -113,7 +113,7 @@ export default function App() {
 
       try {
         const token = await getToken();
-        await fetch(`${API_BASE}/api/orders`, {
+        const res = await fetch(`${API_BASE}/api/orders`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -129,8 +129,16 @@ export default function App() {
             deliveryNotes: formData.deliveryNotes,
           }),
         });
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error((errorData as { error?: string }).error || `Server error: ${res.status}`);
+        }
       } catch (err) {
-        console.error('Order submission failed (proceeding anyway):', err);
+        console.error('Order submission failed:', err);
+        setCheckoutLoading(false);
+        alert('Failed to place order. Please try again.');
+        return;
       }
 
       setLastOrderDetails({

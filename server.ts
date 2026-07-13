@@ -176,11 +176,14 @@ app.post('/api/orders', requireAuth(), async (req, res) => {
     const { orderNumber, items, subtotal, customerName, customerPhone, deliveryAddress, deliveryNotes } = req.body;
     const clerkUserId = (req as any).auth.userId;
 
+    // Normalize items if they arrive as a JSON string (safety for double-stringification)
+    const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
+
     if (!orderNumber || typeof orderNumber !== 'string') {
       res.status(400).json({ error: 'Order number is required' });
       return;
     }
-    if (!Array.isArray(items) || items.length === 0) {
+    if (!Array.isArray(parsedItems) || parsedItems.length === 0) {
       res.status(400).json({ error: 'At least one item is required' });
       return;
     }
@@ -188,6 +191,7 @@ app.post('/api/orders', requireAuth(), async (req, res) => {
       res.status(400).json({ error: 'Valid subtotal is required' });
       return;
     }
+
     if (!customerName || typeof customerName !== 'string' || customerName.trim().length < 1) {
       res.status(400).json({ error: 'Customer name is required' });
       return;
@@ -204,15 +208,7 @@ app.post('/api/orders', requireAuth(), async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO orders (order_number, clerk_user_id, customer_name, customer_phone, delivery_address, delivery_notes, items, subtotal, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'confirmed')
-       RETURNING id, order_number, created_at`,
-      [
-        orderNumber,
-        clerkUserId,
-        customerName.trim(),
-        customerPhone.trim(),
-        deliveryAddress.trim(),
-        (deliveryNotes || '').trim(),
-        items,
+       RETURNING id, order_number, created_at`,[orderNumber, clerkUserId, customerName.trim(), customerPhone.trim(), deliveryAddress.trim(), (deliveryNotes || '').trim(), parsedItems,
         subtotal,
       ]
     );
@@ -226,6 +222,7 @@ app.post('/api/orders', requireAuth(), async (req, res) => {
     });
   } catch (err) {
     console.error('POST /api/orders error:', err);
+    console.error('Items payload type:', typeof req.body?.items, 'isArray:', Array.isArray(req.body?.items));
     res.status(500).json({ error: 'Failed to submit order' });
   }
 });
