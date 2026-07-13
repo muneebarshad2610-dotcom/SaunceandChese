@@ -6,6 +6,7 @@ import Hero from './components/sections/Hero';
 import StorySection from './components/sections/StorySection';
 import MenuSection from './components/sections/MenuSection';
 import DealsSection from './components/sections/DealsSection';
+import AddonsSection from './components/sections/AddonsSection';
 import InstagramMarquee from './components/sections/InstagramMarquee';
 import LocationsSection from './components/sections/LocationsSection';
 import Footer from './components/layout/Footer';
@@ -44,6 +45,7 @@ export default function App() {
     cartSubtotal,
     addToCart,
     quickAddToCart,
+    addAddonToCart,
     removeItem,
     clearCart,
   } = useCart();
@@ -364,6 +366,7 @@ export default function App() {
               onQuickView={openQuickView}
               onQuickAdd={handleQuickAdd}
             />
+            <AddonsSection onAddAddon={addAddonToCart} />
           </>
         )}
       </>

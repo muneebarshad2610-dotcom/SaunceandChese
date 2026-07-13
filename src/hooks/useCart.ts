@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import type { CartItem, MenuItem, AddToCartOptions, CartAddon } from '../types';
+import type { CartItem, MenuItem, AddonItem, AddToCartOptions, CartAddon } from '../types';
 import { EXTRA_CHEESE_PRICE, DRINK_OPTIONS } from '../types';
 
 const STORAGE_KEY = 'snc_cart';
@@ -142,12 +142,45 @@ export function useCart() {
     setCart([]);
   }, []);
 
+  // Add a standalone addon item (drink, sauce, extra) directly to cart
+  const addAddonToCart = useCallback((addon: AddonItem) => {
+    const addonImage = addon.type === 'drink'
+      ? 'https://images.unsplash.com/photo-1552539615-7eec9b2d1814?q=80&w=100&auto=format&fit=crop'
+      : 'https://images.unsplash.com/photo-1623689046284-9f1e9f32a6c6?q=80&w=100&auto=format&fit=crop';
+
+    const cartItem: CartItem = {
+      id: 10000 + addon.id, // offset to avoid ID collision with menu items
+      name: addon.name,
+      unitPrice: addon.price,
+      qty: 1,
+      image: addonImage,
+      addons: [],
+    };
+
+    setCart((prev) => {
+      const existingIndex = prev.findIndex(
+        (c) => c.id === cartItem.id && JSON.stringify(c.addons) === '[]'
+      );
+      const next = [...prev];
+      if (existingIndex > -1) {
+        next[existingIndex] = {
+          ...next[existingIndex],
+          qty: next[existingIndex].qty + 1,
+        };
+      } else {
+        next.push(cartItem);
+      }
+      return next;
+    });
+  }, []);
+
   return {
     cart,
     cartItemCount,
     cartSubtotal,
     addToCart,
     quickAddToCart,
+    addAddonToCart,
     adjustQty,
     removeItem,
     clearCart,

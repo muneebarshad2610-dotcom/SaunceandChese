@@ -10,7 +10,7 @@ export default function Hero({ onNavigateMenu }: HeroProps) {
       {/* Left: copy */}
       <div className="relative z-10 space-y-6 md:space-y-8 text-left">
         <div className="inline-block bg-[#F5DEB3] border-2 border-[#C41E3A] px-5 py-1.5 rounded-full font-handwritten text-lg md:text-xl text-[#C41E3A] -rotate-2 animate-bounce">
-          Freshly Melted Since 1984
+          Freshly Melted
         </div>
 
         <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black leading-none text-[#C41E3A] uppercase font-retro">
@@ -30,7 +30,7 @@ export default function Hero({ onNavigateMenu }: HeroProps) {
             onClick={onNavigateMenu}
             className="bg-[#FFB81C] text-[#C41E3A] px-8 py-4.5 rounded-2xl text-lg md:text-xl font-black uppercase tracking-widest retro-shadow border-4 border-[#C41E3A] hover:bg-[#ffa71c] hover:-translate-y-1 transition-all cursor-pointer"
           >
-            Sink Your Teeth In
+            Menu
           </button>
           <button
             onClick={onNavigateMenu}
@@ -51,8 +51,8 @@ export default function Hero({ onNavigateMenu }: HeroProps) {
           className="relative"
         >
           <img
-            src="https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=600&auto=format&fit=crop"
-            alt="Smash Cheesy Burger"
+            src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600&auto=format&fit=crop"
+            alt="Smash Cheesy Burger with Cheese Pull"
             className="w-full max-w-[420px] md:max-w-[480px] h-[450px] md:h-[520px] object-cover rounded-[60px] md:rounded-[80px] border-8 border-white retro-shadow"
             referrerPolicy="no-referrer"
           />
