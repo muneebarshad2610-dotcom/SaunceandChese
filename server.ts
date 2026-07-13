@@ -35,7 +35,7 @@ const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',')
   : ['http://localhost:3000', 'http://localhost:5173'];
 app.use(cors({ origin: allowedOrigins, credentials: true }));
-app.use(express.json({ limit: '10kb' }));
+app.use(express.json({ limit: '1mb' }));
 
 // ─── Custom auth middleware (uses @clerk/backend verifyToken directly) ─
 // We don't rely on @clerk/express middleware because v2.1.40 has a bug

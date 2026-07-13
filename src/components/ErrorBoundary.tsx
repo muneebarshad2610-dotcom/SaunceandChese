@@ -22,7 +22,7 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('❌ Error Boundary caught:', error, errorInfo);
+    console.error('Error Boundary caught:', error, errorInfo);
   }
 
   render(): ReactNode {
@@ -30,9 +30,7 @@ export default class ErrorBoundary extends Component<Props, State> {
     const p = (this as any).props as Props;
 
     if (s.hasError) {
-      if (p.fallback) {
-        return p.fallback;
-      }
+      if (p.fallback) return p.fallback;
 
       return (
         <div className="min-h-screen bg-[#FDF5E6] flex items-center justify-center p-8">

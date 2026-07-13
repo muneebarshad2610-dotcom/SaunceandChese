@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, MapPin, Phone, User, MessageSquareText } from 'lucide-react';
 import type { CheckoutFormData } from '../../types';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 interface Props {
   isOpen: boolean;
@@ -27,6 +28,7 @@ export default function CheckoutForm({
     deliveryNotes: '',
   });
   const [errors, setErrors] = useState<Partial<Record<keyof CheckoutFormData, string>>>({});
+  useScrollLock(isOpen);
 
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof CheckoutFormData, string>> = {};

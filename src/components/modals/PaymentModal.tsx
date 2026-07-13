@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CreditCard, Lock, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { getPaymentGateway } from '../../services/payment';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 interface Props {
   isOpen: boolean;
@@ -20,6 +21,7 @@ export default function PaymentModal({ isOpen, amount, onSuccess, onCancel }: Pr
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const processingRef = useRef(false);
+  useScrollLock(isOpen);
 
   useEffect(() => {
     if (isOpen) {

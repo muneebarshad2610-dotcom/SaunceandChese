@@ -1,6 +1,12 @@
 import { Flame, Instagram } from 'lucide-react';
 
-export default function Footer() {
+type Page = 'home' | 'menu' | 'terms' | 'privacy';
+
+interface Props {
+  onNavigate?: (page: Page) => void;
+}
+
+export default function Footer({ onNavigate }: Props) {
   return (
     <footer className="bg-[#C41E3A] text-white py-16 px-6 md:px-12 border-t-8 border-[#FFB81C]">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-12 text-left">
@@ -59,12 +65,12 @@ export default function Footer() {
             &copy; 2026 Sauce n' Cheese Restaurant Group. Stay Gooey, Karachi!
           </p>
           <div className="flex items-center gap-6">
-            <a href="/terms" className="text-[#FDF5E6]/50 hover:text-[#FFB81C] transition-colors text-[10px] font-black uppercase tracking-widest">
+            <button onClick={() => onNavigate?.('terms')} className="text-[#FDF5E6]/50 hover:text-[#FFB81C] transition-colors text-[10px] font-black uppercase tracking-widest cursor-pointer">
               Terms of Service
-            </a>
-            <a href="/privacy" className="text-[#FDF5E6]/50 hover:text-[#FFB81C] transition-colors text-[10px] font-black uppercase tracking-widest">
+            </button>
+            <button onClick={() => onNavigate?.('privacy')} className="text-[#FDF5E6]/50 hover:text-[#FFB81C] transition-colors text-[10px] font-black uppercase tracking-widest cursor-pointer">
               Privacy Policy
-            </a>
+            </button>
           </div>
         </div>
       </div>

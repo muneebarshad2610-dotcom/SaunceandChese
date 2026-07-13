@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { useAuth } from '@clerk/react';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ToastProvider } from './lib/toast';
 import Navbar from './components/layout/Navbar';
 import Hero from './components/sections/Hero';
 import StorySection from './components/sections/StorySection';
@@ -170,17 +171,22 @@ export default function App() {
       if (!isSignedIn) return;
       const orderId = 'SNC-' + Math.floor(100000 + Math.random() * 900000);
       pendingOrderRef.current = { formData, orderId };
+      checkoutSnapshotRef.current = { cart, subtotal: cartSubtotal, itemCount: cartItemCount };
       setIsCheckoutOpen(false);
       setShowPaymentModal(true);
     },
-    [isSignedIn]
+    [isSignedIn, cart, cartSubtotal, cartItemCount]
   );
+
+  // Snapshot cart state once when checkout begins to avoid stale closures
+  const checkoutSnapshotRef = useRef<{ cart: typeof cart; subtotal: number; itemCount: number } | null>(null);
 
   // After payment succeeds, actually create the order
   const handlePaymentSuccess = useCallback(
     async (_transactionId: string) => {
       const pending = pendingOrderRef.current;
-      if (!pending) return;
+      const snapshot = checkoutSnapshotRef.current;
+      if (!pending || !snapshot) return;
       const { formData, orderId } = pending;
 
       setCheckoutLoading(true);
@@ -199,8 +205,8 @@ export default function App() {
           },
           body: JSON.stringify({
             orderNumber: orderId,
-            items: cart,
-            subtotal: cartSubtotal,
+            items: snapshot.cart,
+            subtotal: snapshot.subtotal,
             customerName: formData.customerName,
             customerPhone: formData.customerPhone,
             deliveryAddress: formData.deliveryAddress,
@@ -212,26 +218,30 @@ export default function App() {
           const errorData = await res.json().catch(() => ({}));
           throw new Error((errorData as { error?: string }).error || 'Server error: ' + res.status);
         }
+
+        const created = await res.json();
+        const serverId = created?.orderNumber || orderId;
+        const subtotal = created?.subtotal ?? snapshot.subtotal;
+
+        setLastOrderDetails({
+          id: serverId,
+          total: Number(subtotal),
+          itemsCount: snapshot.itemCount,
+        });
+        setShowPaymentModal(false);
+        setShowOrderSuccess(true);
+        clearCart();
+        setCheckoutLoading(false);
+        pendingOrderRef.current = null;
+        checkoutSnapshotRef.current = null;
       } catch (err) {
         console.error('Order submission failed:', err);
         setCheckoutLoading(false);
         setShowPaymentModal(false);
         alert(err instanceof Error ? err.message : 'Failed to place order. Please try again.');
-        return;
       }
-
-      setLastOrderDetails({
-        id: orderId,
-        total: cartSubtotal,
-        itemsCount: cartItemCount,
-      });
-      setShowPaymentModal(false);
-      setShowOrderSuccess(true);
-      clearCart();
-      setCheckoutLoading(false);
-      pendingOrderRef.current = null;
     },
-    [isSignedIn, getToken, cart, cartSubtotal, cartItemCount, clearCart]
+    [isSignedIn, getToken, clearCart]
   );
 
   const handlePaymentCancel = useCallback(() => {
@@ -257,6 +267,7 @@ export default function App() {
   // Render layout shell shared by all pages (navbar + modals)
   const renderShell = (children: ReactNode) => (
     <ErrorBoundary>
+      <ToastProvider>
       <div className="min-h-screen bg-[#FDF5E6] text-[#1A1A1A] font-sans selection:bg-[#FFB81C] selection:text-[#C41E3A] overflow-x-hidden flex flex-col">
         <Navbar
           cartItemCount={cartItemCount}
@@ -269,7 +280,7 @@ export default function App() {
 
         <main className="flex-1">{children}</main>
 
-        <Footer />
+        <Footer onNavigate={navigate} />
 
         {/* Modals — available on all pages */}
         <QuickViewModal
@@ -324,6 +335,7 @@ export default function App() {
           onClose={() => setShowOrderSuccess(false)}
         />
       </div>
+    </ToastProvider>
     </ErrorBoundary>
   );
 

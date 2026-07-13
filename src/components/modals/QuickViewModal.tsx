@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Plus, Minus, Sparkles, Droplets, Wine } from 'lucide-react';
 import type { MenuItem, AddonItem, ProductVariant } from '../../types';
 import { fetchAddons, getSauceOptions, getDrinkOptions, getExtraCheesePrice } from '../../types';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 interface Props {
   item: MenuItem | null;
@@ -47,6 +48,7 @@ export default function QuickViewModal({ item, onClose, onAddToCart }: Props) {
   const [sauce, setSauce] = useState('Ketchup');
   const [drink, setDrink] = useState('');
   const [addons, setAddons] = useState<AddonItem[]>([]);
+  useScrollLock(!!item);
 
   useEffect(() => {
     fetchAddons().then(setAddons).catch(() => {});
