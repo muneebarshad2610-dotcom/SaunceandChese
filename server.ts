@@ -946,20 +946,6 @@ app.get('/api/table/:qrToken', async (req, res) => {
   }
 });
 
-// ─── Table Rate Limiting (prevents QR URL abuse) ────────────────
-
-const tableOrderRateMap = new Map<number, number[]>();
-
-function checkTableRateLimit(tableId: number, maxOrders = 3, windowMs = 300000): boolean {
-  const now = Date.now();
-  const timestamps = tableOrderRateMap.get(tableId) || [];
-  const recent = timestamps.filter((t) => now - t < windowMs);
-  if (recent.length >= maxOrders) return false;
-  recent.push(now);
-  tableOrderRateMap.set(tableId, recent);
-  return true;
-}
-
 // POST /api/orders/table — place order from table (no auth required, just guest name)
 app.post('/api/orders/table', async (req, res) => {
   try {
@@ -967,26 +953,6 @@ app.post('/api/orders/table', async (req, res) => {
 
     if (!tableId || typeof tableId !== 'number') {
       res.status(400).json({ error: 'Table ID is required' });
-      return;
-    }
-
-    // Check table exists and is active
-    const { rows: tableRows } = await pool.query(
-      `SELECT id, is_active FROM tables WHERE id = $1`,
-      [tableId]
-    );
-    if (tableRows.length === 0) {
-      res.status(404).json({ error: 'Table not found' });
-      return;
-    }
-    if (!tableRows[0].is_active) {
-      res.status(403).json({ error: 'This table is inactive. Please scan a valid QR code at the restaurant.' });
-      return;
-    }
-
-    // Rate limit: max 3 orders per table per 5 minutes
-    if (!checkTableRateLimit(tableId)) {
-      res.status(429).json({ error: 'Too many orders for this table. Please wait a few minutes.' });
       return;
     }
     if (!guestName || typeof guestName !== 'string' || guestName.trim().length < 1) {
