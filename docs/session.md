@@ -216,3 +216,31 @@
 - **Problem**: Mobile drawer had `z-20` while sticky navbar had `z-40`, causing the drawer to render behind the navbar.
 - **Fix**: Drawer now uses `fixed inset-0` (full screen) with `z-50`, backdrop uses `z-40`. Drawer properly overlays everything including the sticky navbar.
 - **Files touched**: src/components/layout/Navbar.tsx, docs/session.md
+
+## Session 24 — [2026-07-14] — Fix mobile drawer stacking context (behind hero section)
+
+- **Problem**: Drawer/backdrop nested inside `<nav>` element — `z-50` constrained within nav's stacking context, so hero section could overlap it.
+- **Fix**: Moved drawer and backdrop outside `<nav>` as siblings. Now stack at document root level.
+- **Files touched**: src/components/layout/Navbar.tsx
+
+## Session 25 — [2026-07-14] — Remove mock payment system (security audit action)
+
+- **Deleted** `src/services/payment.ts` — entire mock payment gateway (MockPaymentGateway, StripePaymentGateway stub, getPaymentGateway).
+- **Rewrote** `PaymentModal.tsx` — replaced card form (fake card number/expiry/CVV/processing) with simple "Confirm Order" step showing total + "Place Order" button. No card data collected.
+- **Updated** `App.tsx` — removed `handlePaymentSuccess` (no more `_transactionId`). `handlePlaceOrder` submits order directly after confirmation.
+- **Removed** `VITE_PAYMENT_GATEWAY` from `.env.example`.
+- **Files touched**: src/services/payment.ts (deleted), src/components/modals/PaymentModal.tsx, src/App.tsx, .env.example, docs/
+
+## Session 26 — [2026-07-14] — Security audit fixes
+
+- **Global JSON parse error handler**: Added middleware catching `SyntaxError` from malformed request bodies — returns 400 instead of leaking server details.
+- **PUT /api/menu-items/:id validation**: Added same name/category/description/image validation as POST endpoint (was missing entirely).
+- **PATCH /api/tables/:id validation**: Added type/value checks for table_number (positive number), capacity (positive number), is_active (boolean).
+- **PUT /api/addons/:id validation**: Added same type/name validation as POST endpoint.
+- **Session token UUID validation**: `/^[a-f0-9-]{36}$/i` regex replaces weak `length >= 16` check.
+- **Admin auth consistency**: 3 endpoints (`GET /api/orders/admin`, `PATCH /api/orders/:id/status`, `POST /api/admin/block-session`) now use `requireAdminOrManager()` — proper 401 vs 403 distinction.
+- **PII removed from server logs**: No more email, clerkUserId, sessionToken, or targetUserId logged.
+- **session_token removed** from `GET /api/orders` response (users don't need it).
+- **Frontend console.error gated**: All 16 `console.error(err)` calls in .tsx files wrapped with `if (import.meta.env.DEV)`.
+- **ErrorBoundary**: `error.message` only shown in DEV mode; proper class property declarations.
+- **Files touched**: server.ts, src/components/ErrorBoundary.tsx, src/App.tsx, src/pages/AdminAddons.tsx, src/pages/AdminOrders.tsx, src/pages/AdminProducts.tsx, src/pages/AdminTables.tsx, src/pages/AdminUsers.tsx, src/pages/KitchenView.tsx, src/pages/OrderHistory.tsx, src/pages/ProfilePage.tsx, docs/

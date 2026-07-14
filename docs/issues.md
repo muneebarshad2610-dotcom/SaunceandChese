@@ -15,96 +15,96 @@
 - **Files**: `server.ts:44,54,122,222,236,626`, `AdminOrders.tsx:12,172,174,499,517`, `OrderHistory.tsx:302,322`, etc.
 - **Fix**: Replace `any` with proper types (`Request`, `Response`, `CartItem[]`, etc.).
 
-### 3. No `aria-label` on Some Icon-Only Buttons
-- **Fix**: Remaining icon-only buttons need `aria-label`.
-
-### 4. Hardcoded CSS Colors Not Using Theme Tokens
+### 3. Hardcoded CSS Colors Not Using Theme Tokens
 - **Files**: All `.tsx` files — `bg-[#C41E3A]`, `text-[#FFB81C]`, etc. used hundreds of times.
 - **Fix**: Define color tokens in tailwind config and reference by name.
 
-### 5. JSON Parse Fallback Silently Swallows Errors
+### 4. JSON Parse Fallback Silently Swallows Errors
 - **Files**: `App.tsx:212,250`, `AdminProducts.tsx:181`, `AdminTables.tsx:97`, `AdminAddons.tsx:124`, `TableOrder.tsx:158`
 - **Pattern**: `await res.json().catch(() => ({}))` — returns `{}` on invalid JSON, then `.error` is `undefined`, masking real server errors.
 - **Fix**: Check `Content-Type` or let JSON parse throw and handle in catch.
 
-### 6. KitchenView Web Audio Context Created Without User Gesture
+### 5. KitchenView Web Audio Context Created Without User Gesture
 - **File**: `src/pages/KitchenView.tsx:51-61`
 - **Problem**: `new AudioContext()` in `useEffect` — modern browsers block it without user interaction.
 - **Fix**: Create on first user click/tap, or use a resume-on-interaction pattern.
 
-### 7. No Pagination on Orders / Users API
+### 6. No Pagination on Orders / Users API
 - **File**: `server.ts:331-353,356-382,619-643`
 - **Problem**: Returns all orders/users with no limit. Will become slow as DB grows.
 - **Fix**: Add `LIMIT`/`OFFSET` with page query params.
+
+### 7. Table Order Session Tokens Not Server-Generated
+- **File**: `server.ts:1062`, `TableOrder.tsx:40-48`
+- **Problem**: Session token is generated client-side via `crypto.randomUUID()` in localStorage. Server never validates the token came from a legitimate QR scan.
+- **Fix**: Generate session token server-side on first QR page load, return as cookie/response.
+
+### 8. User Role Lookup Calls Clerk API on Every Request (No Cache)
+- **File**: `server.ts:203-214`
+- **Problem**: Every admin/kitchen request makes a sync HTTP call to Clerk to fetch role. Adds latency; breaks if Clerk is down.
+- **Fix**: Extract role from Clerk JWT claims, or cache locally with TTL.
 
 ---
 
 ## 🟡 Medium
 
-### 16. CartDrawer Uses Index-Based Keys
+### 9. CartDrawer Uses Index-Based Keys
 - **File**: `src/components/modals/CartDrawer.tsx:77`
 - **Fix**: Use a stable unique key per cart item.
 
-### 17. No Loading State for Admin Page Transitions
+### 10. No Loading State for Admin Page Transitions
 - **Files**: AdminProducts, AdminOrders, AdminTables — component mounts show skeleton/loading, but switching tabs re-mounts without loading indicator.
 - **Fix**: Share loading state across admin tab switches.
 
-### 18. Mock Payment Gateway 5% Random Failure Not Configurable
-- **File**: `src/services/payment.ts:16-18`
-- **Fix**: Make failure rate configurable via env var or only with specific card numbers.
-
-### 19. No Scroll Lock When Modals Are Open
-- **Files**: All modal components
-- **Problem**: Background page scrolls behind modals.
-- **Fix**: Set `overflow: hidden` on `document.body` when any modal is open.
-
-### 20. KitchenView Limits Display to First 5 Items Per Order
+### 11. KitchenView Limits Display to First 5 Items Per Order
 - **File**: `src/pages/KitchenView.tsx:209`
 - **Problem**: `order.items.slice(0, 5)` — items beyond 5 are invisible. No "show all" option.
 - **Fix**: Add expand/collapse for items.
 
-### 21. Rate Limiter Lost on Server Restart
-- **File**: `server.ts:1000-1010`
+### 12. Rate Limiter Lost on Server Restart
+- **File**: `server.ts`
 - **Problem**: In-memory `Map` resets on restart, allowing a table to immediately send 10 more orders.
 - **Fix**: Use DB-backed rate limiting or Redis.
 
-### 22. No Input Validation on `deliveryNotes` Length
+### 13. No Input Validation on `deliveryNotes` Length
 - **File**: `server.ts:268,311`
 - **Fix**: Add max length validation.
 
-### 23. Console Statements in Production Code (19 occurrences)
-- **Fix**: Remove or replace with a logging service.
-
-### 24. Tawk.to Loaded on All Pages (Kitchen, Admin, etc.)
+### 14. Tawk.to Loaded on All Pages (Kitchen, Admin, etc.)
 - **File**: `index.html:51-63`
 - **Fix**: Only initialize on public-facing pages or lazy-load.
 
-### 25. CheckoutFlow: No Way to Edit Delivery Details After Payment
-- **File**: `src/App.tsx`
-- **Problem**: Once payment modal opens, user cannot go back to edit delivery address without canceling entirely.
-- **Fix**: Add a "Back" button in PaymentModal to return to checkout form.
-
-### 26. No Keyboard Shortcuts for Admin/Kitchen Power Users
+### 15. No Keyboard Shortcuts for Admin/Kitchen Power Users
 - **Problem**: Kitchen staff must click buttons for every status update. Admin power users navigate entirely by click.
 - **Fix**: Add keyboard shortcuts (e.g., Enter=next status, 1-5=select order).
+
+### 16. Clerk Session Revocation Not Checked
+- **File**: `server.ts:54-69`
+- **Problem**: JWT verified for signature/expiry but not checked against Clerk for session revocation. Revoked sessions usable until JWT expiry (~1 hour).
+- **Fix**: For sensitive operations, check session status via Clerk API.
+
+### 17. No CSRF Protection
+- **File**: `server.ts:34-37`
+- **Problem**: Permissive CORS + no anti-CSRF tokens. `POST /api/orders/table` has no auth at all.
+- **Fix**: Tighten CORS to production origin only; add CSRF for cookie-based flows.
 
 ---
 
 ## 🟢 Low
 
-### 27. `dist/` Directory Committed to Git
-### 28. `server.log` Committed to Git
-### 29. Empty `scripts/` Directory
-### 30. `Design.Md` Uses `.Md` Instead of `.md`
-### 31. `activeCategory` Function Defined But Never Used (`TableOrder.tsx:50-54`)
-### 32. Hardcoded Phone Number in 5 Locations (`03318025998`)
-### 33. Shutdown Race Condition in `server.ts:1180-1185`
-### 34. Indentation Inconsistencies in `server.ts:299-314`
-### 35. `base_cheese`/`base_sauce` Defaults Hardcoded in Route Handlers
-### 36. MenuSection Shows "Kitchen Updating!" Empty State for All Filters When Empty
-### 37. No Confirmation Dialog for Order Status Changes in AdminOrders
-### 38. OrderHistory Auto-Fetches Every Mount With No Cache
-### 39. AdminProducts Loads on Every Tab Switch (No Cache)
+### 18. `dist/` Directory Committed to Git
+### 19. `server.log` Committed to Git
+### 20. `activeCategory` Function Defined But Never Used (`TableOrder.tsx:50-54`)
+### 21. Hardcoded Phone Number in 5 Locations (`03318025998`)
+### 22. Shutdown Race Condition in `server.ts:1180-1185`
+### 23. Indentation Inconsistencies in `server.ts:299-314`
+### 24. `base_cheese`/`base_sauce` Defaults Hardcoded in Route Handlers
+### 25. MenuSection Shows "Kitchen Updating!" Empty State for All Filters When Empty
+### 26. No Confirmation Dialog for Order Status Changes in AdminOrders
+### 27. OrderHistory Auto-Fetches Every Mount With No Cache
+### 28. AdminProducts Loads on Every Tab Switch (No Cache)
+### 29. `@clerk/express` Installed But Unused
+### 30. No Rate Limiting on `POST /api/contact`
 
 ---
 
@@ -126,3 +126,14 @@
 - No scroll lock when modals open — fixed. `useScrollLock` hook applied to all modals.
 - Empty `scripts/` directory — removed.
 - `Design.Md` uses `.Md` — renamed to `design.md`.
+- Mock payment gateway — removed entirely. No payment processing in app.
+- Console statements in production code (19 occurrences) — gated behind `import.meta.env.DEV`.
+- ErrorBoundary exposes error.message to users — gated behind DEV mode.
+- PUT/PATCH endpoints missing input validation — fixed for menu-items, tables, addons.
+- No `aria-label` on Navbar icon buttons — fixed.
+- No scroll lock when modals open — fixed.
+- Admin auth returns 403 instead of 401 — fixed with `requireAdminOrManager()`.
+- PII leaked in server logs — redacted (email, clerkUserId, sessionToken).
+- `session_token` exposed in user-facing API — removed from GET /api/orders.
+- No JSON parse error handler — added global SyntaxError handler returning 400.
+- Mobile drawer behind navbar/hero — fixed with z-index reordering + render outside `<nav>`.
